@@ -16,13 +16,13 @@ software_dbprefix=$(catapult websites.apache.$5.software_dbprefix)
 webroot=$(catapult websites.apache.$5.webroot)
 
 # generate database config files
-if [ -z "${software}" ]; then
-    echo -e "no database configuration file needed, skipping..."
-elif [ "${software}" = "codeigniter2" ]; then
+if [ "${software}" = "codeigniter2" ]; then
     file="/var/www/repositories/apache/${domain}/${webroot}application/config/database.php"
     echo -e "generating ${software} ${file}..."
     if [ -f "${file}" ]; then
         sudo chmod 0777 "${file}"
+    else
+        mkdir -p $(dirname "${file}")
     fi
     sed -e "s/\$db\['default'\]\['hostname'\]\s=\s'localhost';/\$db\['default'\]\['hostname'\] = '${redhat_mysql_ip}';/g" \
         -e "s/\$db\['default'\]\['username'\]\s=\s'';/\$db\['default'\]\['username'\] = '${mysql_user}';/g" \
@@ -36,6 +36,8 @@ elif [ "${software}" = "codeigniter3" ]; then
     echo -e "generating ${software} ${file}..."
     if [ -f "${file}" ]; then
         sudo chmod 0777 "${file}"
+    else
+        mkdir -p $(dirname "${file}")
     fi
     sed -e "s/'hostname'\s=>\s'localhost'/'hostname' => '${redhat_mysql_ip}'/g" \
         -e "s/'username'\s=>\s''/'username' => '${mysql_user}'/g" \
@@ -49,6 +51,8 @@ elif [ "${software}" = "drupal6" ]; then
     echo -e "generating ${software} ${file}..."
     if [ -f "${file}" ]; then
         sudo chmod 0777 "${file}"
+    else
+        mkdir -p $(dirname "${file}")
     fi
     connectionstring="mysql:\/\/${mysql_user}:${mysql_user_password}@${redhat_mysql_ip}\/${1}_${domainvaliddbname}"
     sed -e "s/mysql:\/\/username:password@localhost\/databasename/${connectionstring}/g" \
@@ -59,6 +63,8 @@ elif [ "${software}" = "drupal7" ]; then
     echo -e "generating ${software} ${file}..."
     if [ -f "${file}" ]; then
         sudo chmod 0777 "${file}"
+    else
+        mkdir -p $(dirname "${file}")
     fi
     connectionstring="\$databases['default']['default'] = array('driver' => 'mysql','database' => '${1}_${domainvaliddbname}','username' => '${mysql_user}','password' => '${mysql_user_password}','host' => '${redhat_mysql_ip}','prefix' => '${software_dbprefix}');"
     sed -e "s/\$databases\s=\sarray();/${connectionstring}/g" \
@@ -69,6 +75,8 @@ elif [ "${software}" = "silverstripe" ]; then
     echo -e "generating ${software} ${file}..."
     if [ -f "${file}" ]; then
         sudo chmod 0777 "${file}"
+    else
+        mkdir -p $(dirname "${file}")
     fi
     connectionstring="\$databaseConfig = array(\"type\" => \"MySQLDatabase\",\"server\" => \"${redhat_mysql_ip}\",\"username\" => \"${mysql_user}\",\"password\" => \"${mysql_user_password}\",\"database\" => \"${1}_${domainvaliddbname}\");"
     sed -e "s/\$databaseConfig\s=\sarray();/${connectionstring}/g" \
@@ -79,6 +87,8 @@ elif [ "${software}" = "wordpress" ]; then
     echo -e "generating ${software} ${file}..."
     if [ -f "${file}" ]; then
         sudo chmod 0777 "${file}"
+    else
+        mkdir -p $(dirname "${file}")
     fi
     sed -e "s/database_name_here/${1}_${domainvaliddbname}/g" \
         -e "s/username_here/${mysql_user}/g" \
@@ -92,6 +102,8 @@ elif [ "${software}" = "xenforo" ]; then
     echo -e "generating ${software} ${file}..."
     if [ -f "${file}" ]; then
         sudo chmod 0777 "${file}"
+    else
+        mkdir -p $(dirname "${file}")
     fi
     sed -e "s/\$config\['db'\]\['host'\]\s=\s'localhost';/\$config\['db'\]\['host'\] = '${redhat_mysql_ip}';/g" \
         -e "s/\$config\['db'\]\['username'\]\s=\s'';/\$config\['db'\]\['username'\] = '${mysql_user}';/g" \
@@ -102,7 +114,23 @@ elif [ "${software}" = "xenforo" ]; then
 fi
 
 # set ownership of user generated directories
-if [ "$software" = "drupal6" ]; then
+if [ "$software" = "codeigniter2" ]; then
+    if [ -d "/var/www/repositories/apache/${domain}/${webroot}uploads" ]; then
+        echo -e "setting permissions for $software upload directory ~/uploads"
+        if [ "$1" != "dev" ]; then
+            sudo chown -R apache /var/www/repositories/apache/${domain}/${webroot}uploads
+        fi
+        sudo chmod -R 0700 /var/www/repositories/apache/${domain}/${webroot}uploads
+    fi
+elif [ "$software" = "codeigniter3" ]; then
+    if [ -d "/var/www/repositories/apache/${domain}/${webroot}uploads" ]; then
+        echo -e "setting permissions for $software upload directory ~/uploads"
+        if [ "$1" != "dev" ]; then
+            sudo chown -R apache /var/www/repositories/apache/${domain}/${webroot}uploads
+        fi
+        sudo chmod -R 0700 /var/www/repositories/apache/${domain}/${webroot}uploads
+    fi
+elif [ "$software" = "drupal6" ]; then
     if [ -d "/var/www/repositories/apache/${domain}/${webroot}sites/default/files" ]; then
         echo -e "setting permissions for $software upload directory ~/sites/default/files"
         if [ "$1" != "dev" ]; then
@@ -126,13 +154,36 @@ elif [ "$software" = "wordpress" ]; then
         fi
         sudo chmod -R 0700 /var/www/repositories/apache/${domain}/${webroot}wp-content/uploads
     fi
+elif [ "$software" = "xenforo" ]; then
+    if [ -d "/var/www/repositories/apache/${domain}/${webroot}data" ]; then
+        echo -e "setting permissions for $software upload directory ~/data"
+        if [ "$1" != "dev" ]; then
+            sudo chown -R apache /var/www/repositories/apache/${domain}/${webroot}data
+        fi
+        sudo chmod -R 0700 /var/www/repositories/apache/${domain}/${webroot}data
+    fi
+    if [ -d "/var/www/repositories/apache/${domain}/${webroot}internal_data" ]; then
+        echo -e "setting permissions for $software upload directory ~/internal_data"
+        if [ "$1" != "dev" ]; then
+            sudo chown -R apache /var/www/repositories/apache/${domain}/${webroot}internal_data
+        fi
+        sudo chmod -R 0700 /var/www/repositories/apache/${domain}/${webroot}internal_data
+    fi
 fi
 
-# run updatedb
-if [ "$software" = "drupal6" ]; then
+# run software database update operations
+if [ "$software" = "codeigniter2" ]; then
+    :
+    #cd "/var/www/repositories/apache/${domain}/${webroot}" && php index.php migrate
+elif [ "$software" = "codeigniter3" ]; then
+    :
+    #cd "/var/www/repositories/apache/${domain}/${webroot}" && php index.php migrate
+elif [ "$software" = "drupal6" ]; then
     cd "/var/www/repositories/apache/${domain}/${webroot}" && drush updatedb -y
 elif [ "$software" = "drupal7" ]; then
     cd "/var/www/repositories/apache/${domain}/${webroot}" && drush updatedb -y
+elif [ "$software" = "wordpress" ]; then
+    cd "/var/www/repositories/apache/${domain}/${webroot}" && php /catapult/provisioners/redhat/installers/wp-cli.phar --allow-root core update-db
 fi
 
 touch "/catapult/provisioners/redhat/logs/software_config.$(catapult websites.apache.$5.domain).complete"

@@ -1,15 +1,31 @@
 source "/catapult/provisioners/redhat/modules/catapult.sh"
 
 # reset httpd log files
-sudo cat /dev/null > /var/log/httpd/access_log
-sudo cat /dev/null > /var/log/httpd/error_log
+if [ -e /var/log/httpd/access_log ]; then
+  sudo cat /dev/null > /var/log/httpd/access_log
+fi
+if [ -e /var/log/httpd/error_log ]; then
+  sudo cat /dev/null > /var/log/httpd/error_log
+fi
 
 # install apache
 sudo yum install -y httpd
 sudo systemctl enable httpd.service
 sudo systemctl start httpd.service
+
+# install mod_security
+# note enabled by default: see /etc/httpd/conf.d/mod_security.conf
+sudo yum install -y mod_security
+
+# install mod_ssl and create self-signed cert
 sudo yum install -y mod_ssl
 sudo bash /etc/ssl/certs/make-dummy-cert "/etc/ssl/certs/httpd-dummy-cert.key.cert"
+
+# do not expose server information
+# https://httpd.apache.org/docs/2.4/mod/core.html#servertokens
+if ! grep -q "ServerTokens Prod" "/etc/httpd/conf/httpd.conf"; then
+   sudo bash -c 'echo "ServerTokens Prod" >> /etc/httpd/conf/httpd.conf'
+fi
 
 # define the server's servername
 # suppress this - httpd: Could not reliably determine the server's fully qualified domain name, using localhost.localdomain. Set the 'ServerName' directive globally to suppress this message
@@ -40,13 +56,7 @@ if [ ! -e /var/www/repositories/apache/_default_ ]; then
     sudo ln -s /catapult/repositories/apache/_default_ /var/www/repositories/apache/
 fi
 
-# 80/443: enable cors for localdev http response codes from dashboard
-if [ "$1" = "dev" ]; then
-    cors="SetEnvIf Origin \"^(.*\.?devopsgroup\.io)$\" ORIGIN_SUB_DOMAIN=\$1
-    Header set Access-Control-Allow-Origin \"%{ORIGIN_SUB_DOMAIN}e\" env=ORIGIN_SUB_DOMAIN"
-else
-    cors=""
-fi
+# 80/443: create vhosts
 sudo cat > /etc/httpd/sites-enabled/_default_.conf << EOF
 <VirtualHost *:80>
   DocumentRoot /var/www/repositories/apache/_default_/
@@ -59,9 +69,6 @@ sudo cat > /etc/httpd/sites-enabled/_default_.conf << EOF
         SSLCertificateKeyFile /etc/ssl/certs/httpd-dummy-cert.key.cert
     </VirtualHost>
 </IfModule>
-<Directory "/var/www/repositories/apache/_default_/">
-    $cors
-</Directory>
 EOF
 
 # reload apache

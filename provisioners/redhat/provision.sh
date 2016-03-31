@@ -25,14 +25,17 @@ echo "   \_\__/   \_\__/          \_\__/   \_\__/     "
 
 
 echo -e "\n\n\n==> SYSTEM INFORMATION"
-echo -e "CPU"
+echo -e "SYSTEM"
+cat /etc/centos-release
+hostnamectl status
+echo -e "\nCPU"
 cat /proc/cpuinfo | grep 'model name' | cut -d: -f2 | awk 'NR==1' | tr -d " "
 echo -e "$(top -bn 1 | awk '{print $9}' | tail -n +8 | awk '{s+=$1} END {print s}')% utilization"
-echo -e "\nHDD"
+echo -e "\nDISKS"
 df -h
-echo -e "\nNET"
+echo -e "\nNETWORK"
 ifconfig
-echo -e "\nRAM"
+echo -e "\nMEMORY"
 free -h
 
 
@@ -48,8 +51,30 @@ sudo yum install -y git
 # initialize known_hosts
 sudo mkdir -p ~/.ssh
 sudo touch ~/.ssh/known_hosts
-sudo ssh-keyscan -T 10 bitbucket.org > ~/.ssh/known_hosts
-sudo ssh-keyscan -T 10 github.com >> ~/.ssh/known_hosts
+# ssh-keyscan bitbucket.org for a maximum of 10 tries
+i=0
+until [ $i -ge 10 ]; do
+    sudo ssh-keyscan bitbucket.org > ~/.ssh/known_hosts
+    if grep -q "bitbucket\.org" ~/.ssh/known_hosts; then
+        echo "ssh-keyscan for bitbucket.org successful"
+        break
+    else
+        echo "ssh-keyscan for bitbucket.org failed, retrying!"
+    fi
+    i=$[$i+1]
+done
+# ssh-keyscan github.com for a maximum of 10 tries
+i=0
+until [ $i -ge 10 ]; do
+    sudo ssh-keyscan github.com >> ~/.ssh/known_hosts
+    if grep -q "github\.com" ~/.ssh/known_hosts; then
+        echo "ssh-keyscan for github.com successful"
+        break
+    else
+        echo "ssh-keyscan for github.com failed, retrying!"
+    fi
+    i=$[$i+1]
+done
 # clone and pull catapult
 if ([ $1 = "dev" ] || [ $1 = "test" ]); then
     branch="develop"
@@ -62,10 +87,9 @@ if [ $1 != "dev" ]; then
     if [ -d "/catapult/.git" ]; then
         cd /catapult && sudo git checkout ${branch}
         cd /catapult && sudo git fetch
-        cd /catapult && sudo git diff --exit-code ${branch} origin/${branch} "secrets/configuration.yml.gpg"
         cd /catapult && sudo git pull
     else
-        sudo git clone --recursive -b ${branch} $2 /catapult | sed "s/^/\t/"
+        sudo git clone --recursive -b ${branch} $2 /catapult
     fi
 else
     if ! [ -e "/catapult/secrets/configuration.yml.gpg" ]; then
@@ -83,6 +107,23 @@ if [ $(cat "/catapult/provisioners/provisioners.yml" | shyaml get-values-0 redha
     echo -e "\n\n\n==> PROVISION: ${4}"
     # decrypt configuration
     source "/catapult/provisioners/redhat/modules/catapult_decrypt.sh"
+    # get configuration
+    source "/catapult/provisioners/redhat/modules/catapult.sh"
+
+    # report a deployment to new relic
+    newrelic_deployment=$(curl --silent --show-error --connect-timeout 10 --max-time 20 --write-out "HTTPSTATUS:%{http_code}" --request POST "https://api.newrelic.com/deployments.xml" \
+    --header "X-Api-Key: $(catapult company.newrelic_api_key)" \
+    --data "deployment[app_name]=$(catapult company.name | tr '[:upper:]' '[:lower:]')-${1}-redhat" \
+    --data "deployment[description]=Catapult Provision Started" \
+    --data "deployment[revision]=$(cat "/catapult/VERSION.yml" | shyaml get-value version)")
+    newrelic_deployment_status=$(echo "${newrelic_deployment}" | tr -d '\n' | sed -e 's/.*HTTPSTATUS://')
+    newrelic_deployment=$(echo "${newrelic_deployment}" | sed -e 's/HTTPSTATUS\:.*//g')
+    # check for a curl error
+    if [ $newrelic_deployment_status == 000 ]; then
+        echo "there was a problem reporting this deployment to new relic"
+    else
+        echo "successfully reported this deployment to new relic"
+    fi
 
     # loop through each required module
     cat "/catapult/provisioners/provisioners.yml" | shyaml get-values-0 redhat.servers.redhat.$4.modules |
@@ -94,29 +135,50 @@ if [ $(cat "/catapult/provisioners/provisioners.yml" | shyaml get-values-0 redha
         # if multithreading is supported
         if ([ $(cat "/catapult/provisioners/provisioners.yml" | shyaml get-value redhat.modules.${module}.multithreading) == "True" ]); then
             # cleanup leftover utility files
-            for file in "/catapult/provisioners/redhat/logs/${module}.*.log"; do
+            for file in /catapult/provisioners/redhat/logs/${module}.*.log; do
                 if [ -e "$file" ]; then
                     rm $file
                 fi
             done
-            for file in "/catapult/provisioners/redhat/logs/${module}.*.complete"; do
+            for file in /catapult/provisioners/redhat/logs/${module}.*.complete; do
                 if [ -e "$file" ]; then
                     rm $file
                 fi
             done
             # enable job control
             set -m
-            # get configuration
-            source "/catapult/provisioners/redhat/modules/catapult.sh"
-            # loop through websites and pass to subprocesses
+            # create an array for cpu samples
+            cpu_load_samples=()
+            # create a website index to pass to each sub-process
             website_index=0
-            echo "${configuration}" | shyaml get-values-0 websites.apache |
+            # loop through websites and start sub-processes
             while read -r -d $'\0' website; do
+                # only allow a certain number of parallel bash sub-processes at once
+                while [ $(( $(ls -l /catapult/provisioners/redhat/logs/${module}.*.log 2>/dev/null | wc -l) - $(ls -l /catapult/provisioners/redhat/logs/${module}.*.complete 2>/dev/null | wc -l) )) -gt 5 ]; do
+                    # sample cpu usage
+                    cpu_load_sample_decimal=$(top -bn 1 | awk '{print $9}' | tail -n +8 | awk '{s+=$1} END {print s}')
+                    cpu_load_samples+=(${cpu_load_sample_decimal%.*})
+                    # add up all of the cpu samples
+                    cpu_load_samples_sum=0
+                    for i in ${cpu_load_samples[@]}; do
+                      let cpu_load_samples_sum+=$i
+                    done
+                    # get the count of the cpu samples
+                    cpu_load_samples_total="${#cpu_load_samples[@]}"
+                    # calculate cpu average
+                    if [ "${cpu_load_samples_total}" -gt 0 ]; then
+                        cpu_load_samples_average=$((cpu_load_samples_sum / cpu_load_samples_total))
+                    else
+                        cpu_load_samples_average=0
+                    fi
+                    echo "> waiting to start more parallel processes [$(( $(ls -l /catapult/provisioners/redhat/logs/${module}.*.log 2>/dev/null | wc -l) - $(ls -l /catapult/provisioners/redhat/logs/${module}.*.complete 2>/dev/null | wc -l) )) active / 5 max] [$(ls -l /catapult/provisioners/redhat/logs/${module}.*.complete  2>/dev/null | wc -l) completed] [${cpu_load_samples_average}% average cpu]"
+                    sleep 2
+                done
                 bash "/catapult/provisioners/redhat/modules/${module}.sh" $1 $2 $3 $4 $website_index >> "/catapult/provisioners/redhat/logs/${module}.$(echo "${website}" | shyaml get-value domain).log" 2>&1 &
                 (( website_index += 1 ))
-            done
+            done < <(echo "${configuration}" | shyaml get-values-0 websites.apache)
+            echo "==> all parallel processes started, waiting for all parallel processes to complete..."
             # determine when each subprocess finishes
-            cpu_load_samples=()
             while read -r -d $'\0' website; do
                 domain=$(echo "${website}" | shyaml get-value domain)
                 domain_tld_override=$(echo "${website}" | shyaml get-value domain_tld_override 2>/dev/null )
@@ -124,9 +186,10 @@ if [ $(cat "/catapult/provisioners/provisioners.yml" | shyaml get-values-0 redha
                 software_dbprefix=$(echo "${website}" | shyaml get-value software_dbprefix 2>/dev/null )
                 software_workflow=$(echo "${website}" | shyaml get-value software_workflow 2>/dev/null )
                 while [ ! -e "/catapult/provisioners/redhat/logs/${module}.${domain}.complete" ]; do
+                    # sample cpu usage
                     cpu_load_sample_decimal=$(top -bn 1 | awk '{print $9}' | tail -n +8 | awk '{s+=$1} END {print s}')
                     cpu_load_samples+=(${cpu_load_sample_decimal%.*})
-                    sleep 1
+                    sleep 2
                 done
                 echo -e "=> domain: ${domain}"
                 echo -e "=> domain_tld_override: ${domain_tld_override}"
@@ -135,18 +198,30 @@ if [ $(cat "/catapult/provisioners/provisioners.yml" | shyaml get-values-0 redha
                 echo -e "=> software_workflow: ${software_workflow}"
                 cat "/catapult/provisioners/redhat/logs/${module}.${domain}.log" | sed 's/^/     /'
             done < <(echo "${configuration}" | shyaml get-values-0 websites.apache)
+            # add up all of the cpu samples
             cpu_load_samples_sum=0
             for i in ${cpu_load_samples[@]}; do
               let cpu_load_samples_sum+=$i
             done
+            # get the count of the cpu samples
             cpu_load_samples_total="${#cpu_load_samples[@]}"
-            echo -e "==> CPU USAGE: $((cpu_load_samples_sum / cpu_load_samples_total))% from $cpu_load_samples_total samples"
-            # cleanup utility files
-            for file in "/catapult/provisioners/redhat/logs/${module}.*.log"; do
-                rm $file
+            # calculate cpu average
+            if [ "${cpu_load_samples_total}" -gt 0 ]; then
+                cpu_load_samples_average=$((cpu_load_samples_sum / cpu_load_samples_total))
+            else
+                cpu_load_samples_average=0
+            fi
+            echo -e "==> CPU USAGE: ${cpu_load_samples_average}% from ${cpu_load_samples_total} samples"
+            # cleanup leftover utility files
+            for file in /catapult/provisioners/redhat/logs/${module}.*.log; do
+                if [ -e "$file" ]; then
+                    rm $file
+                fi
             done
-            for file in "/catapult/provisioners/redhat/logs/${module}.*.complete"; do
-                rm $file
+            for file in /catapult/provisioners/redhat/logs/${module}.*.complete; do
+                if [ -e "$file" ]; then
+                    rm $file
+                fi
             done
         else
             bash "/catapult/provisioners/redhat/modules/${module}.sh" $1 $2 $3 $4
