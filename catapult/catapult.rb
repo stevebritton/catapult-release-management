@@ -69,8 +69,10 @@ module Catapult
         puts exception.message
         puts "\n"
         puts "Please correct the error then re-run your vagrant command."
-        puts "See https://github.com/devopsgroup-io/catapult-release-management for more information."
-        File.delete('.lock')
+        puts "See https://github.com/devopsgroup-io/catapult for more information."
+        if File.exist?('.lock')
+          File.delete('.lock')
+        end
         exit 1
       end
     end
@@ -83,21 +85,25 @@ module Catapult
 
 
     # set variables based on operating system
+    # windows
     if (RbConfig::CONFIG['host_os'] =~ /mswin|msys|mingw|cygwin|bccwin|wince|emc/)
       if File.exist?('C:\Program Files (x86)\Git\bin\git.exe')
         @git = "\"C:\\Program Files (x86)\\Git\\bin\\git.exe\""
+      elsif File.exist?('C:\Program Files\Git\bin\git.exe')
+        @git = "\"C:\\Program Files\\Git\\bin\\git.exe\""
       else
-        catapult_exception("Git is not installed at C:\\Program Files (x86)\\Git\\bin\\git.exe")
+        catapult_exception("Git is not installed at C:\\Program Files (x86)\\Git\\bin\\git.exe or C:\\Program Files\\Git\\bin\\git.exe")
       end
       begin
          require "Win32/Console/ANSI"
       rescue LoadError
          catapult_exception('win32console is not installed, please run "gem install win32console"')
       end
+    # others
     elsif (RbConfig::CONFIG['host_os'] =~ /darwin|mac os|linux|solaris|bsd/)
       @git = "git"
     else
-      catapult_exception("Cannot detect your operating system, please submit an issue at https://github.com/devopsgroup-io/catapult-release-management")
+      catapult_exception("Cannot detect your operating system, please submit an issue at https://github.com/devopsgroup-io/catapult")
     end
 
 
@@ -119,6 +125,9 @@ module Catapult
 
 
     # check for vagrant plugins
+    unless Vagrant.has_plugin?("vagrant-aws")
+      catapult_exception('vagrant-aws is not installed, please run "vagrant plugin install vagrant-aws"')
+    end
     unless Vagrant.has_plugin?("vagrant-digitalocean")
       catapult_exception('vagrant-digitalocean is not installed, please run "vagrant plugin install vagrant-digitalocean"')
     end
@@ -141,7 +150,7 @@ module Catapult
     # configure catapult and git
     remote = `#{@git} config --get remote.origin.url`
     if remote.include?("devopsgroup-io/")
-      catapult_exception("In order to use Catapult Release Management, you must fork the repository so that the committed and encrypted configuration is unique to you! See https://github.com/devopsgroup-io/catapult-release-management for more information.")
+      catapult_exception("In order to use Catapult Release Management, you must fork the repository so that the committed and encrypted configuration is unique to you! See https://github.com/devopsgroup-io/catapult for more information.")
     else
       puts "\n\nSelf updating Catapult:\n".color(Colors::WHITE)
       `#{@git} fetch`
@@ -152,7 +161,7 @@ module Catapult
       puts " * Your repository: #{@repo}"
       # set the correct upstream
       repo_upstream = `#{@git} config --get remote.upstream.url`.strip
-      repo_upstream_url = "https://github.com/devopsgroup-io/catapult-release-management.git"
+      repo_upstream_url = "https://github.com/devopsgroup-io/catapult.git"
       puts " * Will sync from: #{repo_upstream}"
       if repo_upstream.empty?
         `#{@git} remote add upstream #{repo_upstream_url}`
@@ -243,6 +252,8 @@ module Catapult
 
     if File.exist?(\'C:\Program Files (x86)\Git\bin\git.exe\')
       git = "\"C:\\Program Files (x86)\\Git\\bin\\git.exe\""
+    elsif File.exist?(\'C:\Program Files\Git\bin\git.exe\')
+      git = "\"C:\\Program Files\\Git\\bin\\git.exe\""
     else
       git = "git"
     end
@@ -426,7 +437,7 @@ module Catapult
       catapult_exception("Please set [\"company\"][\"digitalocean_personal_access_token\"] in secrets/configuration.yml")
     else
       uri = URI("https://api.digitalocean.com/v2/droplets")
-      Net::HTTP.start(uri.host, uri.port, :use_ssl => uri.scheme == 'https', :verify_mode => OpenSSL::SSL::VERIFY_NONE) do |http|
+      Net::HTTP.start(uri.host, uri.port, :use_ssl => uri.scheme == 'https') do |http|
         request = Net::HTTP::Get.new uri.request_uri
         request.add_field "Authorization", "Bearer #{@configuration["company"]["digitalocean_personal_access_token"]}"
         response = http.request request
@@ -438,7 +449,7 @@ module Catapult
           puts " * DigitalOcean API authenticated successfully."
           @api_digitalocean = JSON.parse(response.body)
           uri = URI("https://api.digitalocean.com/v2/account/keys")
-          Net::HTTP.start(uri.host, uri.port, :use_ssl => uri.scheme == 'https', :verify_mode => OpenSSL::SSL::VERIFY_NONE) do |http|
+          Net::HTTP.start(uri.host, uri.port, :use_ssl => uri.scheme == 'https') do |http|
             request = Net::HTTP::Get.new uri.request_uri
             request.add_field "Authorization", "Bearer #{@configuration["company"]["digitalocean_personal_access_token"]}"
             response = http.request request
@@ -454,12 +465,12 @@ module Catapult
               end
             end
             unless @api_digitalocean_account_key_name
-              catapult_exception("Could not find the SSH Key named \"Vagrant\" in DigitalOcean, please follow the Services Setup for DigitalOcean at https://github.com/devopsgroup-io/catapult-release-management#services-setup")
+              catapult_exception("Could not find the SSH Key named \"Vagrant\" in DigitalOcean, please follow the Services Setup for DigitalOcean at https://github.com/devopsgroup-io/catapult#services-setup")
             else
               puts "   - Found the ssh public key \"Vagrant\""
             end
             unless @api_digitalocean_account_key_public_key
-              catapult_exception("The SSH Key named \"Vagrant\" in DigitalOcean does not match your Catapult instance's SSH Key at \"secrets/id_rsa.pub\", please follow the Services Setup for DigitalOcean at https://github.com/devopsgroup-io/catapult-release-management#services-setup")
+              catapult_exception("The SSH Key named \"Vagrant\" in DigitalOcean does not match your Catapult instance's SSH Key at \"secrets/id_rsa.pub\", please follow the Services Setup for DigitalOcean at https://github.com/devopsgroup-io/catapult#services-setup")
             else
               puts "   - The ssh public key \"Vagrant\" matches your secrets/id_rsa.pub ssh public key"
             end
@@ -472,7 +483,7 @@ module Catapult
       catapult_exception("Please set [\"company\"][\"bitbucket_username\"] and [\"company\"][\"bitbucket_password\"] in secrets/configuration.yml")
     else
       uri = URI("https://api.bitbucket.org/1.0/user/repositories")
-      Net::HTTP.start(uri.host, uri.port, :use_ssl => uri.scheme == 'https', :verify_mode => OpenSSL::SSL::VERIFY_NONE) do |http|
+      Net::HTTP.start(uri.host, uri.port, :use_ssl => uri.scheme == 'https') do |http|
         request = Net::HTTP::Get.new uri.request_uri
         request.basic_auth "#{@configuration["company"]["bitbucket_username"]}", "#{@configuration["company"]["bitbucket_password"]}"
         response = http.request request
@@ -485,7 +496,7 @@ module Catapult
           @api_bitbucket = JSON.parse(response.body)
           # verify bitbucket user's catapult ssh key
           uri = URI("https://api.bitbucket.org/1.0/users/#{@configuration["company"]["bitbucket_username"]}/ssh-keys")
-          Net::HTTP.start(uri.host, uri.port, :use_ssl => uri.scheme == 'https', :verify_mode => OpenSSL::SSL::VERIFY_NONE) do |http|
+          Net::HTTP.start(uri.host, uri.port, :use_ssl => uri.scheme == 'https') do |http|
             request = Net::HTTP::Get.new uri.request_uri
             request.basic_auth "#{@configuration["company"]["bitbucket_username"]}", "#{@configuration["company"]["bitbucket_password"]}"
             response = http.request request # Net::HTTPResponse object
@@ -503,12 +514,12 @@ module Catapult
               end
             end
             unless @api_bitbucket_ssh_keys_title
-              catapult_exception("Could not find the SSH Key named \"Catapult\" for your Bitbucket user #{@configuration["company"]["bitbucket_username"]}, please follow Provision Websites at https://github.com/devopsgroup-io/catapult-release-management#provision-websites")
+              catapult_exception("Could not find the SSH Key named \"Catapult\" for your Bitbucket user #{@configuration["company"]["bitbucket_username"]}, please follow Provision Websites at https://github.com/devopsgroup-io/catapult#provision-websites")
             else
               puts "   - Found the ssh public key \"Catapult\" for your Bitbucket user #{@configuration["company"]["bitbucket_username"]}"
             end
             unless @api_bitbucket_ssh_keys_key
-              catapult_exception("The SSH Key named \"Catapult\" in Bitbucket does not match your Catapult instance's SSH Key at \"secrets/id_rsa.pub\", please follow Provision Websites at https://github.com/devopsgroup-io/catapult-release-management#provision-websites")
+              catapult_exception("The SSH Key named \"Catapult\" in Bitbucket does not match your Catapult instance's SSH Key at \"secrets/id_rsa.pub\", please follow Provision Websites at https://github.com/devopsgroup-io/catapult#provision-websites")
             else
               puts "   - The ssh public key \"Catapult\" matches your secrets/id_rsa.pub ssh public key"
             end
@@ -521,7 +532,7 @@ module Catapult
       catapult_exception("Please set [\"company\"][\"github_username\"] and [\"company\"][\"github_password\"] in secrets/configuration.yml")
     else
       uri = URI("https://api.github.com/user")
-      Net::HTTP.start(uri.host, uri.port, :use_ssl => uri.scheme == 'https', :verify_mode => OpenSSL::SSL::VERIFY_NONE) do |http|
+      Net::HTTP.start(uri.host, uri.port, :use_ssl => uri.scheme == 'https') do |http|
         request = Net::HTTP::Get.new uri.request_uri
         request.basic_auth "#{@configuration["company"]["github_username"]}", "#{@configuration["company"]["github_password"]}"
         response = http.request request
@@ -534,7 +545,7 @@ module Catapult
           @api_github = JSON.parse(response.body)
           # verify github user's catapult ssh key
           uri = URI("https://api.github.com/user/keys")
-          Net::HTTP.start(uri.host, uri.port, :use_ssl => uri.scheme == 'https', :verify_mode => OpenSSL::SSL::VERIFY_NONE) do |http|
+          Net::HTTP.start(uri.host, uri.port, :use_ssl => uri.scheme == 'https') do |http|
             request = Net::HTTP::Get.new uri.request_uri
             request.basic_auth "#{@configuration["company"]["github_username"]}", "#{@configuration["company"]["github_password"]}"
             response = http.request request # Net::HTTPResponse object
@@ -552,12 +563,12 @@ module Catapult
               end
             end
             unless @api_github_ssh_keys_title
-              catapult_exception("Could not find the SSH Key named \"Catapult\" for your GitHub user #{@configuration["company"]["github_username"]}, please follow Provision Websites at https://github.com/devopsgroup-io/catapult-release-management#provision-websites")
+              catapult_exception("Could not find the SSH Key named \"Catapult\" for your GitHub user #{@configuration["company"]["github_username"]}, please follow Provision Websites at https://github.com/devopsgroup-io/catapult#provision-websites")
             else
               puts "   - Found the ssh public key \"Catapult\" for your GitHub user #{@configuration["company"]["github_username"]}"
             end
             unless @api_github_ssh_keys_key
-              catapult_exception("The SSH Key named \"Catapult\" in GitHub does not match your Catapult instance's SSH Key at \"secrets/id_rsa.pub\", please follow Provision Websites at https://github.com/devopsgroup-io/catapult-release-management#provision-websites")
+              catapult_exception("The SSH Key named \"Catapult\" in GitHub does not match your Catapult instance's SSH Key at \"secrets/id_rsa.pub\", please follow Provision Websites at https://github.com/devopsgroup-io/catapult#provision-websites")
             else
               puts "   - The ssh public key \"Catapult\" matches your secrets/id_rsa.pub ssh public key"
             end
@@ -570,7 +581,7 @@ module Catapult
       catapult_exception("Please set [\"company\"][\"bamboo_base_url\"] and [\"company\"][\"bamboo_username\"] and [\"company\"][\"bamboo_password\"] in secrets/configuration.yml")
     else
       uri = URI("#{@configuration["company"]["bamboo_base_url"]}rest/api/latest/project.json?os_authType=basic")
-      Net::HTTP.start(uri.host, uri.port, :use_ssl => uri.scheme == 'https', :verify_mode => OpenSSL::SSL::VERIFY_NONE) do |http|
+      Net::HTTP.start(uri.host, uri.port, :use_ssl => uri.scheme == 'https') do |http|
         request = Net::HTTP::Get.new uri.request_uri
         request.basic_auth "#{@configuration["company"]["bamboo_username"]}", "#{@configuration["company"]["bamboo_password"]}"
         response = http.request request
@@ -583,22 +594,22 @@ module Catapult
           @api_bamboo = JSON.parse(response.body)
           api_bamboo_project_key = @api_bamboo["projects"]["project"].find { |element| element["key"] == "CAT" }
           unless api_bamboo_project_key
-            catapult_exception("Could not find the project key \"CAT\" in Bamboo, please follow the Services Setup for Bamboo at https://github.com/devopsgroup-io/catapult-release-management#services-setup")
+            catapult_exception("Could not find the project key \"CAT\" in Bamboo, please follow the Services Setup for Bamboo at https://github.com/devopsgroup-io/catapult#services-setup")
           end
           api_bamboo_project_name = @api_bamboo["projects"]["project"].find { |element| element["name"] == "Catapult" }
           unless api_bamboo_project_name
-            catapult_exception("Could not find the project name \"Catapult\" in Bamboo, please follow the Services Setup for Bamboo at https://github.com/devopsgroup-io/catapult-release-management#services-setup")
+            catapult_exception("Could not find the project name \"Catapult\" in Bamboo, please follow the Services Setup for Bamboo at https://github.com/devopsgroup-io/catapult#services-setup")
           else
             puts "   - Found the project key \"CAT\""
           end
         end
         uri = URI("#{@configuration["company"]["bamboo_base_url"]}rest/api/latest/result/CAT-TEST.json?os_authType=basic")
-        Net::HTTP.start(uri.host, uri.port, :use_ssl => uri.scheme == 'https', :verify_mode => OpenSSL::SSL::VERIFY_NONE) do |http|
+        Net::HTTP.start(uri.host, uri.port, :use_ssl => uri.scheme == 'https') do |http|
           request = Net::HTTP::Get.new uri.request_uri
           request.basic_auth "#{@configuration["company"]["bamboo_username"]}", "#{@configuration["company"]["bamboo_password"]}"
           response = http.request request
           if response.code.to_f.between?(399,499)
-            catapult_exception("Could not find the plan key \"TEST\" in Bamboo, please follow the Services Setup for Bamboo at https://github.com/devopsgroup-io/catapult-release-management#services-setup")
+            catapult_exception("Could not find the plan key \"TEST\" in Bamboo, please follow the Services Setup for Bamboo at https://github.com/devopsgroup-io/catapult#services-setup")
           elsif response.code.to_f.between?(500,600)
             puts "   - The Bamboo API seems to be down, skipping... (this may impact provisioning and automated deployments)".color(Colors::RED)
           else
@@ -606,12 +617,12 @@ module Catapult
           end
         end
         uri = URI("#{@configuration["company"]["bamboo_base_url"]}rest/api/latest/result/CAT-QC.json?os_authType=basic")
-        Net::HTTP.start(uri.host, uri.port, :use_ssl => uri.scheme == 'https', :verify_mode => OpenSSL::SSL::VERIFY_NONE) do |http|
+        Net::HTTP.start(uri.host, uri.port, :use_ssl => uri.scheme == 'https') do |http|
           request = Net::HTTP::Get.new uri.request_uri
           request.basic_auth "#{@configuration["company"]["bamboo_username"]}", "#{@configuration["company"]["bamboo_password"]}"
           response = http.request request
           if response.code.to_f.between?(399,499)
-            catapult_exception("Could not find the plan key \"QC\" in Bamboo, please follow the Services Setup for Bamboo at https://github.com/devopsgroup-io/catapult-release-management#services-setup")
+            catapult_exception("Could not find the plan key \"QC\" in Bamboo, please follow the Services Setup for Bamboo at https://github.com/devopsgroup-io/catapult#services-setup")
           elsif response.code.to_f.between?(500,600)
             puts "   - The Bamboo API seems to be down, skipping... (this may impact provisioning and automated deployments)".color(Colors::RED)
           else
@@ -619,12 +630,12 @@ module Catapult
           end
         end
         uri = URI("#{@configuration["company"]["bamboo_base_url"]}rest/api/latest/result/CAT-PROD.json?os_authType=basic")
-        Net::HTTP.start(uri.host, uri.port, :use_ssl => uri.scheme == 'https', :verify_mode => OpenSSL::SSL::VERIFY_NONE) do |http|
+        Net::HTTP.start(uri.host, uri.port, :use_ssl => uri.scheme == 'https') do |http|
           request = Net::HTTP::Get.new uri.request_uri
           request.basic_auth "#{@configuration["company"]["bamboo_username"]}", "#{@configuration["company"]["bamboo_password"]}"
           response = http.request request
           if response.code.to_f.between?(399,499)
-            catapult_exception("Could not find the plan key \"PROD\" in Bamboo, please follow the Services Setup for Bamboo at https://github.com/devopsgroup-io/catapult-release-management#services-setup")
+            catapult_exception("Could not find the plan key \"PROD\" in Bamboo, please follow the Services Setup for Bamboo at https://github.com/devopsgroup-io/catapult#services-setup")
           elsif response.code.to_f.between?(500,600)
             puts "   - The Bamboo API seems to be down, skipping... (this may impact provisioning and automated deployments)".color(Colors::RED)
           else
@@ -702,7 +713,7 @@ module Catapult
       authorization_header = algorithm + ' ' + 'Credential=' + @configuration["company"]["aws_access_key"] + '/' + credential_scope + ', ' +  'SignedHeaders=' + signed_headers + ', ' + 'Signature=' + signature
       # ************* SEND THE REQUEST *************
       uri = URI(endpoint + '?' + canonical_querystring)
-      Net::HTTP.start(uri.host, uri.port, :use_ssl => uri.scheme == 'https', :verify_mode => OpenSSL::SSL::VERIFY_NONE) do |http|
+      Net::HTTP.start(uri.host, uri.port, :use_ssl => uri.scheme == 'https') do |http|
         request = Net::HTTP::Get.new uri.request_uri
         request.add_field "Authorization", "#{authorization_header}"
         request.add_field "x-amz-date", "#{amzdate}"
@@ -723,7 +734,7 @@ module Catapult
       catapult_exception("Please set [\"company\"][\"cloudflare_api_key\"] and [\"company\"][\"cloudflare_email\"] in secrets/configuration.yml")
     else
       uri = URI("https://api.cloudflare.com/client/v4/zones")
-      Net::HTTP.start(uri.host, uri.port, :use_ssl => uri.scheme == 'https', :verify_mode => OpenSSL::SSL::VERIFY_NONE) do |http|
+      Net::HTTP.start(uri.host, uri.port, :use_ssl => uri.scheme == 'https') do |http|
         request = Net::HTTP::Get.new uri.request_uri
         request.add_field "X-Auth-Key", "#{@configuration["company"]["cloudflare_api_key"]}"
         request.add_field "X-Auth-Email", "#{@configuration["company"]["cloudflare_email"]}"
@@ -743,7 +754,7 @@ module Catapult
       catapult_exception("Please set [\"company\"][\"newrelic_api_key\"] and [\"company\"][\"newrelic_license_key\"] in secrets/configuration.yml")
     else
       uri = URI("https://api.newrelic.com/v2/users.json")
-      Net::HTTP.start(uri.host, uri.port, :use_ssl => uri.scheme == 'https', :verify_mode => OpenSSL::SSL::VERIFY_NONE) do |http|
+      Net::HTTP.start(uri.host, uri.port, :use_ssl => uri.scheme == 'https') do |http|
         request = Net::HTTP::Get.new uri.request_uri
         request.add_field "X-Api-Key", "#{@configuration["company"]["newrelic_api_key"]}"
         response = http.request request
@@ -757,10 +768,30 @@ module Catapult
         end
       end
     end
+    # https://docs.newrelic.com/docs/apis
+    if @configuration["company"]["newrelic_admin_api_key"] == nil
+      catapult_exception("Please set [\"company\"][\"newrelic_admin_api_key\"] in secrets/configuration.yml")
+    else
+      uri = URI("https://synthetics.newrelic.com/synthetics/api/v1/monitors")
+      Net::HTTP.start(uri.host, uri.port, :use_ssl => uri.scheme == 'https') do |http|
+        request = Net::HTTP::Get.new uri.request_uri
+        request.add_field "X-Api-Key", "#{@configuration["company"]["newrelic_admin_api_key"]}"
+        response = http.request request
+        if response.code.to_f.between?(399,499)
+          catapult_exception("The New Relic Admin API could not authenticate, please verify [\"company\"][\"newrelic_admin_api_key\"].")
+        elsif response.code.to_f.between?(500,600)
+          puts "   - The New Relic Admin API seems to be down, skipping... (this may impact provisioning and automated deployments)".color(Colors::RED)
+        else
+          puts " * New Relic Admin API authenticated successfully."
+          @api_cloudflare = JSON.parse(response.body)
+        end
+      end
+    end
     puts "\nVerification of configuration[\"environments\"]:\n".color(Colors::WHITE)
+    puts "[redhat]"
     # get full list of available digitalocean slugs to validate against
     uri = URI("https://api.digitalocean.com/v2/sizes")
-    Net::HTTP.start(uri.host, uri.port, :use_ssl => uri.scheme == 'https', :verify_mode => OpenSSL::SSL::VERIFY_NONE) do |http|
+    Net::HTTP.start(uri.host, uri.port, :use_ssl => uri.scheme == 'https') do |http|
       request = Net::HTTP::Get.new uri.request_uri
       request.add_field "Authorization", "Bearer #{@configuration["company"]["digitalocean_personal_access_token"]}"
       response = http.request request
@@ -961,13 +992,13 @@ module Catapult
               repo_split_2[1] = repo_split_3[0]
             end
           else
-            # instance["repo"] => https://github.com/seth-reeser/catapult-release-management(.git)
+            # instance["repo"] => https://github.com/seth-reeser/catapult(.git)
             repo_split_1 = instance["repo"].split("://")
             # repo_split_1[0] => https
-            # repo_split_1[1] => github.com/seth-reeser/catapult-release-management(.git)
+            # repo_split_1[1] => github.com/seth-reeser/catapult(.git)
             repo_split_2 = repo_split_1[1].split("/", 2)
             # repo_split_2[0] => github.com
-            # repo_split_2[1] => seth-reeser/catapult-release-management(.git)
+            # repo_split_2[1] => seth-reeser/catapult(.git)
             repo_split_3 = repo_split_2[1].split(".git")
             # repo_split_3[0] => devopsgroup-io/devopsgroup-io
             # if there is a .git on the end, repo_split_3[0] will have a value, otherwise set equal to repo_split_2[1]
@@ -989,12 +1020,14 @@ module Catapult
           if "#{repo_split_2[0]}" == "bitbucket.org"
             @api_bitbucket_repo_access = false
             uri = URI("https://api.bitbucket.org/2.0/repositories/#{repo_split_3[0]}")
-            Net::HTTP.start(uri.host, uri.port, :use_ssl => uri.scheme == 'https', :verify_mode => OpenSSL::SSL::VERIFY_NONE) do |http|
+            Net::HTTP.start(uri.host, uri.port, :use_ssl => uri.scheme == 'https') do |http|
               request = Net::HTTP::Get.new uri.request_uri
               request.basic_auth "#{@configuration["company"]["bitbucket_username"]}", "#{@configuration["company"]["bitbucket_password"]}"
               response = http.request request # Net::HTTPResponse object
-              if response.code.to_f.between?(399,600)
-                @api_bitbucket_repo_access = 500
+              if response.code.to_f == 404
+                catapult_exception("The Bitbucket repo #{instance["repo"]} does not exist")
+              elsif response.code.to_f.between?(399,600)
+                puts "   - The Bitbucket API seems to be down, skipping... (this may impact provisioning and automated deployments)".color(Colors::RED)
               else
                 api_bitbucket_repo_repositories = JSON.parse(response.body)
                 if response.code.to_f == 200
@@ -1005,12 +1038,14 @@ module Catapult
               end
             end
             uri = URI("https://api.bitbucket.org/1.0/privileges/#{repo_split_3[0]}")
-            Net::HTTP.start(uri.host, uri.port, :use_ssl => uri.scheme == 'https', :verify_mode => OpenSSL::SSL::VERIFY_NONE) do |http|
+            Net::HTTP.start(uri.host, uri.port, :use_ssl => uri.scheme == 'https') do |http|
               request = Net::HTTP::Get.new uri.request_uri
               request.basic_auth "#{@configuration["company"]["bitbucket_username"]}", "#{@configuration["company"]["bitbucket_password"]}"
               response = http.request request # Net::HTTPResponse object
-              if response.code.to_f.between?(399,600)
-                @api_bitbucket_repo_access = 500
+              if response.code.to_f == 404
+                catapult_exception("The Bitbucket repo #{instance["repo"]} does not exist")
+              elsif response.code.to_f.between?(399,600)
+                puts "   - The Bitbucket API seems to be down, skipping... (this may impact provisioning and automated deployments)".color(Colors::RED)
               else
                 api_bitbucket_repo_privileges = JSON.parse(response.body)
                 api_bitbucket_repo_privileges.each do |member|
@@ -1023,12 +1058,14 @@ module Catapult
               end
             end
             uri = URI("https://api.bitbucket.org/1.0/group-privileges/#{repo_split_3[0]}")
-            Net::HTTP.start(uri.host, uri.port, :use_ssl => uri.scheme == 'https', :verify_mode => OpenSSL::SSL::VERIFY_NONE) do |http|
+            Net::HTTP.start(uri.host, uri.port, :use_ssl => uri.scheme == 'https') do |http|
               request = Net::HTTP::Get.new uri.request_uri
               request.basic_auth "#{@configuration["company"]["bitbucket_username"]}", "#{@configuration["company"]["bitbucket_password"]}"
               response = http.request request # Net::HTTPResponse object
-              if response.code.to_f.between?(399,600)
-                @api_bitbucket_repo_access = 500
+              if response.code.to_f == 404
+                catapult_exception("The Bitbucket repo #{instance["repo"]} does not exist")
+              elsif response.code.to_f.between?(399,600)
+                puts "   - The Bitbucket API seems to be down, skipping... (this may impact provisioning and automated deployments)".color(Colors::RED)
               else
                 api_bitbucket_repo_group_privileges = JSON.parse(response.body)
                 api_bitbucket_repo_group_privileges.each do |group|
@@ -1042,9 +1079,7 @@ module Catapult
                 end
               end
             end
-            if @api_bitbucket_repo_access == 500
-                puts "   - The Bitbucket API seems to be down, skipping... (this may impact provisioning and automated deployments)".color(Colors::RED)
-            elsif @api_bitbucket_repo_access === false
+            if @api_bitbucket_repo_access === false
               catapult_exception("Your Bitbucket user #{@configuration["company"]["bitbucket_username"]} does not have write access to this repository.")
             elsif @api_bitbucket_repo_access === true
               puts "   - Verified your Bitbucket user #{@configuration["company"]["bitbucket_username"]} has write access."
@@ -1052,11 +1087,13 @@ module Catapult
           end
           if "#{repo_split_2[0]}" == "github.com"
             uri = URI("https://api.github.com/repos/#{repo_split_3[0]}/collaborators/#{@configuration["company"]["github_username"]}")
-            Net::HTTP.start(uri.host, uri.port, :use_ssl => uri.scheme == 'https', :verify_mode => OpenSSL::SSL::VERIFY_NONE) do |http|
+            Net::HTTP.start(uri.host, uri.port, :use_ssl => uri.scheme == 'https') do |http|
               request = Net::HTTP::Get.new uri.request_uri
               request.basic_auth "#{@configuration["company"]["github_username"]}", "#{@configuration["company"]["github_password"]}"
               response = http.request request # Net::HTTPResponse object
-              if response.code.to_f.between?(399,600)
+              if response.code.to_f == 404
+                catapult_exception("The GitHub repo #{instance["repo"]} does not exist")
+              elsif response.code.to_f.between?(399,600)
                 puts "   - The GitHub API seems to be down, skipping... (this may impact provisioning and automated deployments)".color(Colors::RED)
               else
                 if response.code.to_f == 204
@@ -1070,7 +1107,7 @@ module Catapult
           # validate repo branches
           if "#{repo_split_2[0]}" == "bitbucket.org"
             uri = URI("https://api.bitbucket.org/1.0/repositories/#{repo_split_3[0]}/branches")
-            Net::HTTP.start(uri.host, uri.port, :use_ssl => uri.scheme == 'https', :verify_mode => OpenSSL::SSL::VERIFY_NONE) do |http|
+            Net::HTTP.start(uri.host, uri.port, :use_ssl => uri.scheme == 'https') do |http|
               request = Net::HTTP::Get.new uri.request_uri
               request.basic_auth "#{@configuration["company"]["bitbucket_username"]}", "#{@configuration["company"]["bitbucket_password"]}"
               response = http.request request # Net::HTTPResponse object
@@ -1112,7 +1149,7 @@ module Catapult
           end
           if "#{repo_split_2[0]}" == "github.com"
             uri = URI("https://api.github.com/repos/#{repo_split_3[0]}/branches")
-            Net::HTTP.start(uri.host, uri.port, :use_ssl => uri.scheme == 'https', :verify_mode => OpenSSL::SSL::VERIFY_NONE) do |http|
+            Net::HTTP.start(uri.host, uri.port, :use_ssl => uri.scheme == 'https') do |http|
               request = Net::HTTP::Get.new uri.request_uri
               request.basic_auth "#{@configuration["company"]["github_username"]}", "#{@configuration["company"]["github_password"]}"
               response = http.request request # Net::HTTPResponse object
@@ -1156,7 +1193,7 @@ module Catapult
           if "#{repo_split_2[0]}" == "bitbucket.org"
             # the bitbucket api offers no patch for service hooks, so we first need to check if the bitbucket bamboo service hooks exist
             uri = URI("https://api.bitbucket.org/1.0/repositories/#{repo_split_3[0]}/services")
-            Net::HTTP.start(uri.host, uri.port, :use_ssl => uri.scheme == 'https', :verify_mode => OpenSSL::SSL::VERIFY_NONE) do |http|
+            Net::HTTP.start(uri.host, uri.port, :use_ssl => uri.scheme == 'https') do |http|
               request = Net::HTTP::Get.new uri.request_uri
               request.basic_auth "#{@configuration["company"]["bitbucket_username"]}", "#{@configuration["company"]["bitbucket_password"]}"
               response = http.request request # Net::HTTPResponse object
@@ -1182,7 +1219,7 @@ module Catapult
                 end
                 unless @api_bitbucket_services_bamboo_cat_test
                   uri = URI("https://api.bitbucket.org/1.0/repositories/#{repo_split_3[0]}/services")
-                  Net::HTTP.start(uri.host, uri.port, :use_ssl => uri.scheme == 'https', :verify_mode => OpenSSL::SSL::VERIFY_NONE) do |http|
+                  Net::HTTP.start(uri.host, uri.port, :use_ssl => uri.scheme == 'https') do |http|
                     request = Net::HTTP::Post.new uri.request_uri
                     request.basic_auth "#{@configuration["company"]["bitbucket_username"]}", "#{@configuration["company"]["bitbucket_password"]}"
                     request.body = URI::encode\
@@ -1201,7 +1238,7 @@ module Catapult
                 end
                 unless @api_bitbucket_services_bamboo_cat_qc
                   uri = URI("https://api.bitbucket.org/1.0/repositories/#{repo_split_3[0]}/services")
-                  Net::HTTP.start(uri.host, uri.port, :use_ssl => uri.scheme == 'https', :verify_mode => OpenSSL::SSL::VERIFY_NONE) do |http|
+                  Net::HTTP.start(uri.host, uri.port, :use_ssl => uri.scheme == 'https') do |http|
                     request = Net::HTTP::Post.new uri.request_uri
                     request.basic_auth "#{@configuration["company"]["bitbucket_username"]}", "#{@configuration["company"]["bitbucket_password"]}"
                     request.body = URI::encode\
@@ -1224,7 +1261,7 @@ module Catapult
           # create bamboo service per github repo
           if "#{repo_split_2[0]}" == "github.com"
             uri = URI("https://api.github.com/repos/#{repo_split_3[0]}/hooks")
-            Net::HTTP.start(uri.host, uri.port, :use_ssl => uri.scheme == 'https', :verify_mode => OpenSSL::SSL::VERIFY_NONE) do |http|
+            Net::HTTP.start(uri.host, uri.port, :use_ssl => uri.scheme == 'https') do |http|
               request = Net::HTTP::Post.new uri.request_uri
               request.basic_auth "#{@configuration["company"]["github_username"]}", "#{@configuration["company"]["github_password"]}"
               request.body = ""\
@@ -1312,7 +1349,7 @@ module Catapult
       puts " * http://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html"
       puts " * Keep in mind these response codes and nslookups are from within your network - they may differ externally if you're running your own DNS server internally."
       puts "\nAvailable websites:".color(Colors::WHITE)
-      puts "".ljust(42) + "[software]".ljust(14) + "[workflow]".ljust(14) + "[dev.:80]".ljust(21) + "[test.:80]".ljust(21) + "[qc.:80]".ljust(21) + "[production:80]"
+      puts "".ljust(42) + "[software]".ljust(14) + "[workflow]".ljust(14) + "[80:dev.]".ljust(21) + "[80:test.]".ljust(21) + "[80:qc.]".ljust(21) + "[80:production]"
 
       @configuration["websites"].each do |service,data|
         if @configuration["websites"]["#{service}"] == nil
@@ -1346,49 +1383,49 @@ module Catapult
               begin
                 def Command::http_repsonse(uri_str, limit = 10)
                   if limit == 0
-                    row.push("loop".ljust(7))
+                    row.push("loop")
                   else
                     response = Net::HTTP.get_response(URI(uri_str))
                     case response
                     when Net::HTTPSuccess then
                       if response.code.to_f.between?(200,399)
-                        return response.code.color(Colors::GREEN)
+                        return response.code.ljust(4).color(Colors::GREEN)
                       elsif response.code.to_f.between?(400,499)
-                        return response.code.color(Colors::YELLOW)
+                        return response.code.ljust(4).color(Colors::YELLOW)
                       elsif response.code.to_f.between?(500,599)
-                        return response.code.color(Colors::RED)
+                        return response.code.ljust(4).color(Colors::RED)
                       end
                     when Net::HTTPRedirection then
                       location = response['location']
                       http_repsonse(location, limit - 1)
                     else
                       if response.code.to_f.between?(200,399)
-                        return response.code.color(Colors::GREEN)
+                        return response.code.ljust(4).color(Colors::GREEN)
                       elsif response.code.to_f.between?(400,499)
-                        return response.code.color(Colors::YELLOW)
+                        return response.code.ljust(4).color(Colors::YELLOW)
                       elsif response.code.to_f.between?(500,599)
-                        return response.code.color(Colors::RED)
+                        return response.code.ljust(4).color(Colors::RED)
                       end
                     end
                   end
                 end
                 if instance["domain_tld_override"] == nil
-                  row.push(http_repsonse("http://#{environment}#{instance["domain"]}").ljust(4))
+                  row.push(http_repsonse("http://#{environment}#{instance["domain"]}"))
                 else
-                  row.push(http_repsonse("http://#{environment}#{instance["domain"]}.#{instance["domain_tld_override"]}").ljust(4))
+                  row.push(http_repsonse("http://#{environment}#{instance["domain"]}.#{instance["domain_tld_override"]}"))
                 end
               rescue SocketError
-                row.push("down".color(Colors::RED).ljust(4))
+                row.push("down".ljust(4).color(Colors::RED))
               rescue Errno::ECONNREFUSED
-                row.push("down".color(Colors::RED).ljust(4))
+                row.push("down".ljust(4).color(Colors::RED))
               rescue EOFError
-                row.push("down".color(Colors::RED).ljust(4))
+                row.push("down".ljust(4).color(Colors::RED))
               rescue Net::ReadTimeout
-                row.push("down".color(Colors::RED).ljust(4))
+                row.push("down".ljust(4).color(Colors::RED))
               rescue OpenSSL::SSL::SSLError
-                row.push("err".color(Colors::RED).ljust(4))
+                row.push("err".ljust(4).color(Colors::RED))
               rescue Exception => ex
-                row.push("#{ex.class}".color(Colors::RED).ljust(4))
+                row.push("#{ex.class}".ljust(4).color(Colors::RED))
               end
               # nslookup production top-level domain
               begin
@@ -1398,7 +1435,7 @@ module Catapult
                   row.push((Resolv.getaddress "#{environment}#{instance["domain"]}.#{instance["domain_tld_override"]}").ljust(16))
                 end
               rescue
-                row.push("down".ljust(15).color(Colors::RED))
+                row.push("down".ljust(16).color(Colors::RED))
               end
             end
             puts row.join(" ")
