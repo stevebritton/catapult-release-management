@@ -96,12 +96,14 @@ The free market and competition is great - it pushes the envelope of innovation.
 Platform Feature | Catapult | Pantheon | Acquia
 -----------------|----------|----------|--------
 Source                                        | Open                           | Closed                        | Closed
-Feature Set                                   | Bundled                        | Separated                     | Separated
+Subscription Feature Set                      | Bundled                        | Separated                     | Separated
 Supported Software                            | Numerous                       | 2                             | 1
 Minimum Bundled<br>Monthly Cost               | $40                            | $400                          | $134
+Websites per Instance/Subscription            | Unlimited                      | 1                             | 1
 Managed Workflow                              | Git Flow                       | :x:                           | :x:
 Managed Workflow Model                        | Upstream or Downstream         | :x:                           | :x:
 Agile Methodology Focus                       | Scrum                          | :x:                           | :x:
+Managed Continuous Integration                | :white_check_mark:             | :x:                           | :x:
 Environments                                  | LocalDev, Test, QC, Production | Multidev, Dev, Test, Live     | Dev Desktop, Dev, Stage, Prod
 Exacting Configuration                        | :white_check_mark:             | :x:<sup>[2](#references)</sup>| :x:<sup>[3](#references)</sup>
 Approach                                      | Virtual Machine                | Container                     | Virtual Machine
@@ -150,6 +152,7 @@ See an error or have a suggestion? Email competition@devopsgroup.io - we appreci
         - [Forcing www](#forcing-www)
         - [Refreshing Databases](#refreshing-databases)
         - [Connecting to Databases](#connecting-to-databases)
+        - [Hotfixes](#hotfixes)
     - [Performance Testing](#performance-testing)
         - [Website Concurrency Maxiumum](#website-concurrency-maximum)
         - [Interpreting Apache AB Results](#interpreting-apache-ab-results)
@@ -731,6 +734,37 @@ Performing development in a local environment is critical to reducing risk by ex
         * Then add a New Connection with the respective environment's mysql user values in `~/secrets/configuration.yml`.
             * The hostname will be localhost since we are forwarding the port through our local SSH tunnel.
 
+### Hotfixes ###
+Always weigh the risk of *not performing* a hotfix versus *performing* it, as hotfixes require going outside of the normal development and testing workflow. Performing a hotfix varies depending on the website's `software` type, `software_workflow` direction, and type of change (code or database).
+* `software_workflow: downstream`
+    * **Code**
+        1. In `~/configuration.yml`, temporarily set the environments -> dev -> branch key to `branch: master`, and do not commit the change
+        2. Provision any related LocalDev servers
+        3. Develop, test, then commit any changes directly to the `master` branch
+        4. Run the Production Bamboo build and verify the release
+        5. Create a pull request and merge the `master` branch into the `develop` branch
+        6. Set the environments -> dev -> branch key back to `branch: develop`
+        7. Provision any related LocalDev servers
+    * **Database**
+        * Login to the Production website and make the change
+            * (any database change that is beyond the direct capability of the `software` should not be taken out as a hotfix)
+* `software_workflow: upstream`
+    * **Code**
+        1. In `~/configuration.yml`, temporarily set the environments -> dev -> branch key to `branch: master`, and do not commit the change
+        2. Provision any related LocalDev servers
+        3. Develop, test, then commit any changes directly to the `master` branch
+        4. Run the Production build and verify the release
+        5. Create a pull request and merge the `master` branch into the `develop` branch
+        6. Set the environments -> dev -> branch key back to `branch: develop`
+        7. Provision any related LocalDev servers
+    * **Database**
+        1. Login to the Production *and* Test website and make the change
+            * (any database change that is beyond the direct capability of logging into the `software` and safely making the change, should not be taken out as a hotfix)
+        2. From LocalDev and the `develop` branch of the website's repository, commit a deletion of today's (if exists) SQL dump file from within the `~/sql` folder
+            * (this ensures there is a known committed SQL dump of your change to the `develop` branch for when this branch is merged upstream)
+        3. From LocalDev, temporarily checkout the `master` branch of the website's repository, make your change in the most recent SQL dump file from within the `~/sql` folder
+            * (this ensures that during the next Production build your change is not overwritten)
+
 
 
 ## Performance Testing ##
@@ -747,6 +781,8 @@ Using a website with historical Google Analytics data, access the Audience Overv
 
 *(Pageviews x Avg. Session Duration in seconds) / 3,600 seconds* = **Concurrency Maxiumum**
 
+**365,000 pageviews per month**
+
 Take a website with an average of 500 pageviews per hour, or 365,000 pageviews per month, which has a busiest hour of 1,000 pageviews.
 
 Pageviews | Avg. Session Duration | Total Session Seconds | Concurrency Maxiumum
@@ -756,10 +792,12 @@ Pageviews | Avg. Session Duration | Total Session Seconds | Concurrency Maxiumum
 1,000 | 5 minutes (300 seconds) | 300,000 | **88**
 1,000 | 1 minute (60 seconds) | 60,000 | **16**
 
-**100 concurrent requests performed 10 times**
+*100 concurrent requests performed 10 times*
 ````
 ab -l -r -n 1000 -c 100 -H "Accept-Encoding: gzip, deflate" http://test.drupal7.devopsgroup.io/
 ````
+
+**14,600 pageviews per month**
 
 Take a website with an average of 20 pageviews per hour, or 14,600 pageviews per month, which has a busiest hour of 100 pageviews.
 
@@ -770,7 +808,7 @@ Pageviews | Avg. Session Duration | Total Session Seconds | Concurrency Maxiumum
 100 | 5 minutes (300 seconds) | 30,000 | **8**
 100 | 1 minute (60 seconds) | 6,000 | **1.6**
 
-**10 concurrent requests performed 10 times**
+*10 concurrent requests performed 10 times*
 ````
 ab -l -r -n 100 -c 10 -H "Accept-Encoding: gzip, deflate" http://test.drupal7.devopsgroup.io/
 ````
