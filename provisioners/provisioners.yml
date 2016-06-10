@@ -44,10 +44,13 @@ redhat:
           description: "Installs and updates PHP and PHP modules."
           multithreading: false
         rsync:
-          description: "Copies meta files contingent on the software_workflow for websites with software."
+          description: "Copies software file stores contingent on the software_workflow for websites with software."
           multithreading: true
         software_config:
-          description: "Creates database configuration files and sets upload directory permissions for websites with software."
+          description: "Creates software database configuration files and sets software file store container directory permissions for websites with software."
+          multithreading: true
+        software_database_operations:
+          description: "Performs software database operations for websites with software."
           multithreading: true
         software_tools:
           description: "Installs and configures software CLI tools."
@@ -61,9 +64,9 @@ redhat:
     servers:
         redhat:
           apache:
-            modules: ["system","iptables","time","newrelic_sysmon","software_tools","git_clean","git","rsync","software_config","apache","apache_vhosts_clean","apache_vhosts","php","newrelic_apm_php","cloudflare_zones","cloudflare_dns","cloudflare_cache","newrelic_synthetics"]
+            modules: ["system","iptables","time","newrelic_sysmon","git_clean","git","rsync","software_config","php","software_tools","apache","apache_vhosts_clean","apache_vhosts","newrelic_apm_php","cloudflare_zones","cloudflare_dns","cloudflare_cache","newrelic_synthetics"]
           mysql:
-            modules: ["system","iptables","time","newrelic_sysmon","software_tools","git_clean","git","software_config","mysql"]
+            modules: ["system","iptables","time","newrelic_sysmon","git_clean","git","software_config","php","software_tools","mysql","software_database_operations"]
 windows:
 
 software:
@@ -72,33 +75,81 @@ software:
         repo: "https://github.com/bcit-ci/CodeIgniter.git"
         branch: "2.2-stable"
         database_config_file: "application/config/database.php"
+        file_store_containers: ["application/logs","uploads"]
         file_stores: ["uploads"]
       codeigniter3:
         repo: "https://github.com/bcit-ci/CodeIgniter.git"
         branch: "3.0-stable"
         database_config_file: "application/config/database.php"
+        file_store_containers: ["application/logs","uploads"]
         file_stores: ["uploads"]
       drupal6:
         repo: "https://git.drupal.org/project/drupal.git"
         branch: "6.x"
         database_config_file: "sites/default/settings.php"
-        file_stores: ["sites/default"]
+        file_store_containers: ["sites/default"]
+        file_stores: ["sites/default/files"]
       drupal7:
         repo: "https://git.drupal.org/project/drupal.git"
         branch: "7.x"
         database_config_file: "sites/default/settings.php"
-        file_stores: ["sites/default"]
-      silverstripe:
+        file_store_containers: ["sites/default"]
+        file_stores: ["sites/default/files"]
+      expressionengine3:
+        repo: PRIVATE
+        database_config_file: "system/user/config/config.php"
+        file_store_containers: ["system/user/cache","system/user/templates","images/avatars","images/captchas","images/member_photos","images/pm_attachments","images/signature_attachments","images/uploads"]
+      joomla3:
+        repo: "https://github.com/joomla/joomla-cms.git"
+        branch: "3.6.x"
+        database_config_file: "configuration.php"
+        file_store_containers: ["administrator/cache","cache","logs","tmp"]
+      laravel5:
+        repo: "https://github.com/laravel/laravel.git"
+        tag: "v5.0.22"
+        database_config_file: "config/database.php"
+        file_store_containers: ["bootstrap/cache","resources","storage"]
+        file_stores: ["resources","storage"]
+        softwareroot: "../"
+      mediawiki1:
+        repo: "https://github.com/wikimedia/mediawiki.git"
+        branch: "REL1_25"
+        database_config_file: "LocalSettings.php"
+        file_store_containers: ["images"]
+        file_stores: ["images"]
+      moodle3:
+        repo: "https://github.com/moodle/moodle.git"
+        branch: "MOODLE_30_STABLE"
+        file_store_containers: ["moodledata"]
+        file_stores: ["moodledata/filedir"]
+        database_config_file: "config.php"
+      silverstripe3:
         repo: "https://github.com/silverstripe/silverstripe-installer"
         branch: "3.3"
         database_config_file: "mysite/_config.php"
+        file_store_containers: ["assets"]
+        file_stores: ["assets/Uploads"]
+      suitecrm7:
+        repo: "https://github.com/salesagility/SuiteCRM.git"
+        branch: "7.5.x"
+        database_config_file: "config_override.php"
+        file_store_containers: ["cache","custom","data","modules","upload","themes","tmp"]
+        file_stores: ["uploads"]
       wordpress:
         repo: "https://github.com/WordPress/WordPress.git"
-        branch: "master"
+        branch: "4.5-branch"
         database_config_file: "wp-config.php"
+        file_store_containers: ["wp-content"]
         file_stores: ["wp-content/uploads"]
       xenforo:
+        repo: PRIVATE
         database_config_file: "sites/default/settings.php"
+        file_store_containers: ["data","internal_data"]
         file_stores: ["data","internal_data"]
+      zendframework2:
+        repo: "https://github.com/zendframework/zendframework.git"
+        tag: "release-2.4.10"
+        database_config_file: "config/autoload/global.php"
+        softwareroot: "../"
     iis:
       

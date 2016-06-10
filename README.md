@@ -24,7 +24,7 @@
 
 * Catapult is an open source, complete, and distributed architecture
 * Catapult only orchestrates - it is not required to run your infrastructure
-* Catapult uses platform native shell scripts rather than configuration management tools such as Chef, Puppet, Salt
+* Catapult uses platform native shell scripting rather than configuration management tools such as Chef, Puppet, Salt
 * Catapult overlays seamlessly with Scrum methodology
 * Catapult features Gitflow workflow while enforcing exactly matching, branch-driven environments
 * Catapult features a unique workflow model - upstream or downstream
@@ -73,16 +73,25 @@ Catapult leverages the following technologies and technology services to impleme
 
 ## Supported Software ##
 
-Catapult supports the following software:
+Catapult supports and intelligently manages the following software chosen from trending usage statistics from [BuiltWith](https://trends.builtwith.com/cms) and align with the [CentOS 7 trunk](http://mirror.centos.org/centos/7/os/x86_64/Packages/):
 
-* CodeIgniter 2
-* CodeIgniter 3
-* Drupal 6
-* Drupal 7
-* SilverStripe 2
-* WordPress 3.5.2+
-* WordPress 4
-* XenForo 1
+Software | Catapult Key | Released | End-of-Life
+---------|--------------|----------|------------
+CodeIgniter 2                     | `codeigniter2`         | January 28, 2011   | [October 31, 2015](http://forum.codeigniter.com/thread-61357.html)
+CodeIgniter 3                     | `codeigniter3`         | March 30, 2015     | 
+Drupal 6                          | `drupal6`              | February 13, 2008  | [February 24, 2016](https://www.drupal.org/drupal-6-eol)
+Drupal 7                          | `drupal7`              | January 5, 2011    |
+ExpressionEngine 3                | `expressionengine3`    | October 13, 2015   |
+Joomla 3                          | `joomla3`              | September 27, 2012 |
+Laravel 5.0.*                     | `laravel5`             | February 4, 2015   |
+MediaWiki 1                       | `mediawiki1`           | December 8, 2003   |
+Moodle 3                          | `moodle3`              | November 16, 2015  |
+SilverStripe 3                    | `silverstripe3`        | June 29, 2012      |
+SuiteCRM 7                        | `suitecrm7`            | October 21, 2013   |
+WordPress >=3.5.2                 | `wordpress`            | June 17, 2010      |
+WordPress 4                       | `wordpress`            | September 4, 2014  |
+XenForo 1                         | `xenforo`              | March 8, 2011      |
+Zend Framework 2.0.* <=2.4.*      | `zendframework2`       | September 5, 2012  |
 
 Catapult additionally supports basic PHP projects that do not have a database requirement:
 
@@ -149,7 +158,9 @@ See an error or have a suggestion? Email competition@devopsgroup.io - we appreci
         - [Websites](#websites)
     - [Website Development](#website-development)
         - [Website Repositories](#website-repositories)
+        - [Fresh Software Installs](#fresh-software-installs)
         - [Forcing www](#forcing-www)
+        - [Database Migrations](#database-migrations)
         - [Refreshing Databases](#refreshing-databases)
         - [Connecting to Databases](#connecting-to-databases)
         - [Hotfixes](#hotfixes)
@@ -181,7 +192,11 @@ Catapult requires a [Developer Setup](#developer-setup), [Instance Setup](#insta
 
 ## Developer Setup ##
 
-Catapult is controlled via Vagrant and the command line of a Developer's computer - below is a list of required software.
+Catapult is controlled via Vagrant and the command line of a Developer's workstation - below is a list of required software that will need to be installed.
+
+* OS X workstations: 100% compatabile and tested
+* Linux workstations: 100% compatabile and tested
+* Windows workstations: Currently limited support
 
 1. **Vagrant**
     * **Using OS X?**
@@ -222,6 +237,17 @@ Catapult is controlled via Vagrant and the command line of a Developer's compute
     * **Using Linux?**
         1. Git commandline is included in the base distribution in most cases.
         1. For a streamlined Git GUI, download and install SmartGit from http://www.syntevo.com/smartgit/
+5. **Terminal**
+    * **Using OS X?**
+        1. The terminal in the base distrubitions are 100% compatible.
+    * **Using Windows?**
+        1. Download and install Cygwin from https://cygwin.com/install.html
+            * Make sure to install the openssh package
+        1. Run all Vagrant commands from within the Cygwin terminal.
+            * Make sure to open Cygwin terminal as Administrator by right-clicking and selecting "Open as Administrator"
+    * **Using Linux?**
+        1. The terminal in the base distrubitions are 100% compatible.
+
 
 Having your team use the same tools is beneficial to streamlining your workflow - below is a list of recommended software tools.
 
@@ -289,7 +315,7 @@ Bamboo | Continuous Integration | $10
 **DNS:** | |
 CloudFlare | Cloud DNS | Free
 **Monitoring:** | |
-New Relic | Application, Browser, and Server Monitoring | Free
+New Relic | Application, Browser, Server, and *Synthetics Monitoring | Free [*No free tier beyond trial](#partnerships)
 **Total** | | $40+
 \* Depending on load, resources may need to be increased. However, a few websites with builds running irregularly will not incur over a couple dollars more per month.
 
@@ -525,17 +551,19 @@ Catapult follows Gitflow for its configuration and development model - each envi
 
 Environment | LocalDev | Test | QC | Production
 ------------|----------|------|----|-----------
-**Running Branch**                              | *develop*                                                   | *develop*                                                         | *release*                                                      | *master*
-**Deployments**                                 | Manually via `vagrant provision`                            | Automatically via Bamboo (new commits to **develop**)             | Automatically via Bamboo (new commits to **release**)          | Manually via Bamboo
-**Testing Activities**                          | Component Test                                              | Integration Test, System Test                                     | Acceptance Test, Release Test                                  | Operational Qualification
-**Scrum Activity**                              | Sprint Start: Development of User Stories                   | Daily Scrum                                                       | Sprint Review                                                  | Sprint End: Accepted Product Release
-**Scrum Roles**                                 | Development Team                                            | Scrum Master, Development Team, Product Owner (optional)          | Scrum Master, Development Team, Product Owner                  | Product Owner
-**Downstream Software Workflow - Database**     | Restore from **develop** ~/_sql folder of website repo      | Restore from **develop** ~/_sql folder of website repo            | Restore from **release** ~/_sql folder of website repo         | Backup to **develop** ~/_sql folder of website repo during deploy
-**Upstream Software Workflow - Database**       | Restore from **develop** ~/_sql folder of website repo      | Backup to **develop** ~/_sql folder of website repo during deploy | Restore from **release** ~/_sql folder of website repo         | Restore from **master** ~/_sql folder of website repo
-**Downstream Software Workflow - File Store**   | rsync files from **Production** if git untracked            | rsync files from **Production** if git untracked                  | rsync files from **Production** if git untracked               | --
-**Upstream Software Workflow - File Store**     | rsync files from **Test** if git untracked                  | --                                                                | rsync files from **Test** if git untracked                     | rsync files from **Test** if git untracked
+**Running Branch**                                       | *develop*                                                   | *develop*                                                                                                    | *release*                                                      | *master*
+**Deployments**                                          | Manually via `vagrant provision`                            | Automatically via Bamboo (new commits to **develop**)                                                        | Automatically via Bamboo (new commits to **release**)          | Manually via Bamboo
+**Testing Activities**                                   | Component Test                                              | Integration Test, System Test                                                                                | Acceptance Test, Release Test                                  | Operational Qualification
+**Scrum Activity**                                       | Sprint Start: Development of User Stories                   | Daily Scrum                                                                                                  | Sprint Review                                                  | Sprint End: Accepted Product Release
+**Scrum Roles**                                          | Development Team                                            | Scrum Master, Development Team, Product Owner (optional)                                                     | Scrum Master, Development Team, Product Owner                  | Product Owner
+**Downstream Software Workflow - Database**              | Restore from **develop** ~/_sql folder of website repo      | Restore from **develop** ~/_sql folder of website repo                                                       | Restore from **release** ~/_sql folder of website repo         | Auto-commit one backup per day (up to 500MB or 1) to **master** ~/_sql folder of website repo during deploy
+**Downstream Software Workflow - Untracked File Stores** | rsync file stores from **Production**                       | rsync file stores from **Production**                                                                        | rsync file stores from **Production**                          | Pull file stores from **master**
+**Downstream Software Workflow - Tracked File Stores**   | Pull file stores from **develop**                           | Pull file stores from **develop**                                                                            | Pull file stores from **release**                              | Auto-commit file stores (up to 750MB each) to **master** of website repo during deploy
+**Upstream Software Workflow - Database**                | Restore from **develop** ~/_sql folder of website repo      | Auto-commit one backup per day (up to 500MB or 1) to **develop** ~/_sql folder of website repo during deploy | Restore from **release** ~/_sql folder of website repo         | Restore from **master** ~/_sql folder of website repo
+**Upstream Software Workflow - Untracked File Stores**   | rsync file stores from **Test**                             | Pull file stores from **develop**                                                                            | rsync file stores from **Test**                                | rsync file stores from **Test**
+**Upstream Software Workflow - Tracked File Stores**     | Pull file stores from **develop**                           | Auto-commit file stores (up to 750MB each) to **develop** of website repo during deploy                      | Pull file stores from **release**                              | Pull file stores from **master**
 
-
+**NOTE:** Catapult will automatically pull **master** into **develop** when in the **Downstream Software Workflow** direction.
 
 ## Catapult Configuration ##
 
@@ -617,52 +645,28 @@ The following options are available:
         * GitHub and Bitbucket over SSH are supported, HTTPS is not supported
 * `software:`
     * required: no
+    * description: manages many aspects of software respective to each environment for websites with supported software types
+        * maintains softare database config file
+        * manages tracked and untracked software file stores intelligently via git and rsync
+        * manages permissions of software file store containers
+        * manages software database backups and restores intelligently via git
+        * manages software url references in database
+        * manages software admin account integrity
+        * manages software database operations
     * `software: codeigniter2`
-        * maintains codeigniter2 database config file ~/application/config/database.php
-        * rsyncs git untracked ~/uploads
-        * sets permissions for ~/uploads
-        * dumps and restores database at ~/_sql
-        * updates url references in database
     * `software: codeigniter3`
-        * maintains codeigniter3 database config file ~/application/config/database.php
-        * rsyncs git untracked ~/uploads
-        * sets permissions for ~/uploads
-        * dumps and restores database at ~/_sql
-        * updates url references in database
     * `software: drupal6`
-        * maintains drupal6 database config file ~/sites/default/settings.php
-        * rsyncs git untracked ~/sites/default/files
-        * sets permissions for ~/sites/default/files
-        * invokes `drush updatedb`
-        * dumps and restores database at ~/_sql
-        * updates url references in database
-        * resets drupal6 admin password
     * `software: drupal7`
-        * maintains drupal7 database config file ~/sites/default/settings.php
-        * rsyncs git untracked ~/sites/default/files
-        * sets permissions for ~/sites/default/files
-        * invokes `drush updatedb`
-        * dumps and restores database at ~/_sql
-        * updates url references in database
-        * resets drupal7 admin password
-    * `software: silverstripe`
-        * maintains silverstripe database config file ~/mysite/_config.php
-        * dumps and restores database at ~/_sql
-        * updates url references in database
+    * `software: expressionengine3`
+    * `software: joomla3`
+    * `software: laravel5`
+    * `software: mediawiki1`
+    * `software: moodle3`
+    * `software: silverstripe3`
+    * `software: suitecrm7`
     * `software: wordpress`
-        * maintains wordpress database config file ~/wp-config.php
-        * rsyncs git untracked ~/wp-content/uploads
-        * sets permissions for ~/wp-content/uploads
-        * invokes `wp-cli core update-db`
-        * dumps and restores database at ~/_sql
-        * updates url references in database
-        * resets wordpress admin password
     * `software: xenforo`
-        * maintains xenForo database config file ~/library/config.php
-        * rsyncs git untracked ~/data and ~/internal_data
-        * sets permissions for ~/data and ~/internal_data
-        * dumps and restores database at ~/_sql
-        * updates url references in database
+    * `software: zendframework2`
 * `software_dbprefix:`
     * required: no
     * dependency: `software:`
@@ -673,10 +677,10 @@ The following options are available:
     * required: yes
     * dependency: `software:`
     * `software_workflow: downstream`
-        * specifies Production as the source for the database and software file store
+        * specifies Production as the source for the database and software file stores
         * this option is useful for maintaining a website
     * `software_workflow: upstream`
-        * specifies Test as the source for the database and software file store
+        * specifies Test as the source for the database and software file stores
         * this option is useful for launching a new website
         * PLEASE NOTE: affects the Production website instance - see [Release Management](#release-management)
 * `webroot:`
@@ -693,26 +697,74 @@ Performing development in a local environment is critical to reducing risk by ex
 
 ### Website Repositories ###
 
-* Repositories for websites are cloned into the Catapult instance at ~/repositories and in the respective apache or iis folder, listed by domain name.
-    * Repositories are linked between the host and guest for realtime development.
+Repositories for websites are cloned into the Catapult instance at ~/repositories and in the respective apache or iis folder, listed by domain name.
+
+* Repositories are linked between the host and guest for realtime development.
+
+### Fresh Software Installs ###
+
+Catapult enforces software configuration best practices for both fresh installs and existing software repositories, the typical workflow would be to fork the software project on GitHub and add to your `configuration.yml` file. Given the broad spectrum of software requirements there are minor configurations and caveats for specific software types outlined here:
+
+Software | Approach | Notes
+---------|----------|------
+`codeigniter2`      |          |
+`codeigniter3`      |          |
+`drupal6`           |          |
+`drupal7`           |          |
+`expressionengine3` | Download |
+`joomla3`           | Fork     |
+`laravel5`          | Composer | Follow the [Composer Create-Project](https://laravel.com/docs/5.0/installation) documentation.
+`mediawiki1`        | Fork     |
+`moodle3`           | Fork     | Catapult requires the `moodledata` directory to be within the webroot, it's pertinant to create a `.gitignore` and `.htaccess` file for this directory.
+`silverstripe3`     | Fork     | First fork the silver-stripe-installer repository then add a git submodule of silver-framework at a `framework` directory in the root. During a fresh install, the database config file `mysite/_config.php` will need to be given 0777 permissions.
+`suitecrm7`         | Fork     |
+`wordpress`         | Fork     |
+`xenforo`           | Download |
+`zendframework2`    | Fork     | Your best bet is to start from the [zendframework/ZendSkeletonApplication](https://github.com/zendframework/ZendSkeletonApplication) GitHub project. Catapult assumes Zend Framwork is at the root of your repo and writes a database config file at `config/autoload/global.php`, you will also need to set `webroot: public/` in your Catapult configuration.
 
 ### Forcing www ###
 
-* Forcing www is software specific, unlike forcing the https protocol, which is environment specific and driven by the `force_https` option. To force www ([why force www?](http://www.yes-www.org/)), please follow the respective guides per `software`:
-    * `software: codeigniter2`
-        * `~/.htaccess` no official documentation - http://stackoverflow.com/a/4958847/4838803
-    * `software: codeigniter3`
-        * `~/.htaccess` no official documentation - http://stackoverflow.com/a/4958847/4838803
-    * `software: drupal6`
-        * `~/.htaccess` https://github.com/drupal/drupal/blob/6.x-18-security/.htaccess#L87
-    * `software: drupal7`
-        * `~/.htaccess` https://github.com/drupal/drupal/blob/7.x/.htaccess#L89
-    * `software: silverstripe`
-        * `~/mysite/_config.php` no official documentation - http://www.ssbits.com/snippets/2010/a-config-php-cheatsheet/
-    * `software: wordpress`
-        * http://codex.wordpress.org/Changing_The_Site_URL
-    * `software: xenforo`
-        * `~/.htaccess` no official documentation - http://stackoverflow.com/a/4958847/4838803
+Forcing www is generally software specific, unlike forcing the https protocol, which is environment specific and driven by the `force_https` option. To force www ([why force www?](http://www.yes-www.org/)), please follow the respective guides per `software` below.
+
+For `software` that does not have specific documentation, please follow this generic `.htaccess` approach http://stackoverflow.com/a/4958847/4838803
+
+Software | Approach | Documentation
+---------|----------|--------------
+`codeigniter2`      |                      |
+`codeigniter3`      |                      |
+`drupal6`           | `.htaccess`          | https://www.drupal.org/node/150215
+`drupal7`           | `.htaccess`          | https://www.drupal.org/node/150215
+`expressionengine3` |                      |
+`joomla3`           |                      |
+`laravel5`          |                      |
+`mediawiki1`        |                      |
+`moodle3`           |                      |
+`silverstripe3`     | `mysite/_config.php` | http://api.silverstripe.org/3.1/class-Director.html -> http://stackoverflow.com/a/26865882
+`suitecrm7`         |                      | 
+`wordpress`         | Database             | http://codex.wordpress.org/Changing_The_Site_URL
+`xenforo`           |                      |
+`zendframework2`    |                      |
+
+### Database Migrations ###
+
+The best way to handle changes to the software's database schema is through a migrations system. Database migrations are software specific and are invoked via Catapult for you, here we outline the specifics:
+
+Software | Tool | Command | Documentation
+---------|------|---------|--------------
+`codeigniter2`      | Migrations      | `php index.php migrate`                                | https://ellislab.com/codeigniter/user-guide/libraries/migration.html
+`codeigniter3`      | Migrations      | `php index.php migrate`                                | https://www.codeigniter.com/user_guide/libraries/migration.html
+`drupal6`           | Drush           | `drush updatedb -y`                                    | https://www.drupal.org/node/150215
+`drupal7`           | Drush           | `drush updatedb -y`                                    | https://www.drupal.org/node/150215
+`expressionengine3` |                 |                                                        |
+`joomla3`           |                 |                                                        |
+`laravel5`          | Migrations      | `php artisan migrate`                                  | https://laravel.com/docs/5.0/migrations
+`mediawiki1`        | UpdateMediaWiki | `php maintenance/update.php`                           | https://www.mediawiki.org/wiki/Manual:Update.php
+`moodle3`           |                 |                                                        |
+`silverstripe3`     | MigrationTask   | `php framework/cli-script.php dev/tasks/MigrationTask` | http://api.silverstripe.org/3.3/class-MigrationTask.html
+`suitecrm7`         |                 |                                                        |
+`wordpress`         | WP-CLI          | `wp-cli core update-db`                                | http://codex.wordpress.org/Creating_Tables_with_Plugins#Adding_an_Upgrade_Function
+`xenforo`           |                 |                                                        |
+`zendframework2`    |                 |                                                        |
 
 ### Refreshing Databases ###
 
@@ -973,6 +1025,7 @@ As part of a new release, the version number in VERSION.yml will be incremented 
 
 The Catapult team values partnerships and continuous improvement.
 
+* [06-03-2016] New Relic creates request on Catapult's behalf for a free entry point for the New Relic Synthetics API
 * [01-28-2016] Pantheon provides feedback
 * [01-22-2016] New Relic provides private beta access to their Synthetics API along side Breather, Carfax, Ring Central, Rackspace, and IBM.
 
@@ -982,7 +1035,7 @@ The Catapult team values partnerships and continuous improvement.
 
 Catapult is making the conference tour! We plan to attend the following conferences, with more to come. Get a chance to see Catapult in action, presented by it's core developers.
 
-* Spring 2016 [04-08-2016] [Drupaldelphia](http://drupaldelphia.com/)
+* Spring 2016 [04-08-2016] [Drupaldelphia](http://drupaldelphia.com/): DevOps Discipline: Detailed and Complete
 * Summer 2016 [Wharton Web Conference](http://www.sas.upenn.edu/wwc/)
 * Winter 2016 [WordCamp US](http://us.wordcamp.org/)
 
