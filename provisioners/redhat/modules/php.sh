@@ -4,13 +4,22 @@ source "/catapult/provisioners/redhat/modules/catapult.sh"
 
 # core extensions
 sudo yum install -y php
+sudo yum install -y php-cli
 # These are not actual extensions. They are part of the PHP core and cannot be left out of a PHP binary with compilation options.
+
+# php.ini configuration options
+# set the timezone
 sed -i -e "s#\;date\.timezone.*#date.timezone = \"$(catapult company.timezone_redhat)\"#g" /etc/php.ini
+# increase the upload_max_filesize
+sed -i -e "s#\upload_max_filesize.*#upload_max_filesize = 10M#g" /etc/php.ini
+# hide x-powered-by
+sed -i -e "s#\expose_php.*#expose_php = Off#g" /etc/php.ini
 
 # bundled extensions
 # These extensions are bundled with PHP.
 sudo yum install -y php-gd
 sudo yum install -y php-mbstring
+sudo yum install -y php-posix
 
 # external extensions
 # These extensions are bundled with PHP but in order to compile them, external libraries will be needed.
