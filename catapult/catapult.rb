@@ -30,17 +30,6 @@ module Catapult
     end
 
 
-    # puts intro
-    puts "\n"
-    title = "Catapult - https://github.com/devopsgroup-io/catapult"
-    length = title.size
-    padding = 5
-    puts "+".ljust(padding,"-") + "".ljust(length,"-") + "+".rjust(padding,"-")
-    puts "|".ljust(padding)     + title                + "|".rjust(padding)
-    puts "+".ljust(padding,"-") + "".ljust(length,"-") + "+".rjust(padding,"-")
-    puts "\n"
-
-
     # libraries
     require "fileutils"
     require "json"
@@ -78,15 +67,44 @@ module Catapult
     end
 
 
+    # check for and install vagrant plugins
+    def Command::vagrant_plugins(plugins)
+      logger = Vagrant::UI::Colored.new
+      result = false
+      plugins.each do |p|
+        pm = Vagrant::Plugin::Manager.new(
+          Vagrant::Plugin::Manager.user_plugins_file
+        )
+        plugin_hash = pm.installed_plugins
+        next if plugin_hash.has_key?(p)
+        result = true
+        logger.warn("Installing plugin #{p}")
+        pm.install_plugin(p, sources: ["https://rubygems.org"])
+      end
+      if result
+        catapult_exception('Required Vagrant plugins were installed, please re-run your Vagrant command for the plugins to take effect.')
+      end
+    end
+
+
+    # define the minimum vagrant version
+    Vagrant.require_version "> 1.4.0"
+
+
     # ensure the user is in the correct directory when running vagrant commands to prevent git from pulling in catapult upstream master into repositories
     unless File.exist?('LICENSE.txt') && File.exist?('README.md') && File.exist?('VERSION.yml')
       catapult_exception("You are outside of the Catapult root, please change to the Catapult root directory.")
     end
 
 
-    # set variables based on operating system
+    # handle different workstation operating systems
     # windows
     if (RbConfig::CONFIG['host_os'] =~ /mswin|msys|mingw|cygwin|bccwin|wince|emc/)
+      # check for cygwin
+      if RbConfig::CONFIG['host_os'] != "cygwin"
+        catapult_exception("Please run all commands from within the Cygwin terminal as an administrator.")
+      end
+      # check for git
       if File.exist?('C:\Program Files (x86)\Git\bin\git.exe')
         @git = "\"C:\\Program Files (x86)\\Git\\bin\\git.exe\""
       elsif File.exist?('C:\Program Files\Git\bin\git.exe')
@@ -94,18 +112,20 @@ module Catapult
       else
         catapult_exception("Git is not installed at C:\\Program Files (x86)\\Git\\bin\\git.exe or C:\\Program Files\\Git\\bin\\git.exe")
       end
-      begin
-         require "Win32/Console/ANSI"
-      rescue LoadError
-         catapult_exception('win32console is not installed, please run "gem install win32console"')
+      # check for vagrant versions
+      if Vagrant::VERSION == "1.8.1"
+        catapult_exception("There is an issue with Vagrant v1.8.1 on Windows, please install a lesser or greater version.")
       end
+      # define required vagrant plugins
+      vagrant_plugins(["vagrant-aws","vagrant-digitalocean","vagrant-hostmanager","vagrant-vbguest","vagrant-winnfsd"]);
     # others
     elsif (RbConfig::CONFIG['host_os'] =~ /darwin|mac os|linux|solaris|bsd/)
       @git = "git"
+      # define required vagrant plugins
+      vagrant_plugins(["vagrant-aws","vagrant-digitalocean","vagrant-hostmanager","vagrant-vbguest"]);
     else
       catapult_exception("Cannot detect your operating system, please submit an issue at https://github.com/devopsgroup-io/catapult")
     end
-
 
 
     # locking in order to prevent multiple executions occurring at once (e.g. competing command line and Bamboo executions)
@@ -124,21 +144,6 @@ module Catapult
     end
 
 
-    # check for vagrant plugins
-    unless Vagrant.has_plugin?("vagrant-aws")
-      catapult_exception('vagrant-aws is not installed, please run "vagrant plugin install vagrant-aws"')
-    end
-    unless Vagrant.has_plugin?("vagrant-digitalocean")
-      catapult_exception('vagrant-digitalocean is not installed, please run "vagrant plugin install vagrant-digitalocean"')
-    end
-    unless Vagrant.has_plugin?("vagrant-hostmanager")
-      catapult_exception('vagrant-hostmanager is not installed, please run "vagrant plugin install vagrant-hostmanager"')
-    end
-    unless Vagrant.has_plugin?("vagrant-vbguest")
-      catapult_exception('vagrant-vbguest is not installed, please run "vagrant plugin install vagrant-vbguest"')
-    end
-
-
     # require vm name on up and provision
     if ["up","provision"].include?(ARGV[0])
       if ARGV.length == 1
@@ -147,103 +152,123 @@ module Catapult
     end
 
 
+    # all previous should be silent
+    puts "\n\n\n"
+    puts File.read("catapult/catapult.txt")
+    puts "\n"
+    version = YAML.load_file("VERSION.yml")
+    version_git = `#{@git} --version`.strip
+    version_virtualbox = `vboxmanage --version`.strip
+    repo = `#{@git} config --get remote.origin.url`.strip
+    branch = `#{@git} rev-parse --abbrev-ref HEAD`.strip
+    puts "=> CATAPULT VERSION: #{version["version"]}"
+    puts "=> CATAPULT GIT REPO: #{repo}"
+    puts "=> GIT BRANCH: #{branch}"
+    puts "\n"
+    puts "==> WORKSTATION INFORMATION"
+    puts "=> OPERATING SYSTEM: #{RbConfig::CONFIG['host_os']}"
+    puts "=> GIT VERSION: #{version_git}"
+    puts "=> RUBY VERSION: #{RUBY_VERSION}"
+    puts "=> VAGRANT VERSION: #{Vagrant::VERSION}"
+    puts "=> VIRTUALBOX VERSION: #{version_virtualbox}"
+
+
     # configure catapult and git
     remote = `#{@git} config --get remote.origin.url`
     if remote.include?("devopsgroup-io/")
       catapult_exception("In order to use Catapult Release Management, you must fork the repository so that the committed and encrypted configuration is unique to you! See https://github.com/devopsgroup-io/catapult for more information.")
+    end
+    puts "\n\nSelf updating Catapult:\n".color(Colors::WHITE)
+    `#{@git} fetch`
+    # get current branch
+    branch = `#{@git} rev-parse --abbrev-ref HEAD`.strip
+    # get current repo
+    @repo = `#{@git} config --get remote.origin.url`.strip
+    puts " * Your repository: #{@repo}"
+    # set the correct upstream
+    repo_upstream = `#{@git} config --get remote.upstream.url`.strip
+    repo_upstream_url = "https://github.com/devopsgroup-io/catapult.git"
+    puts " * Will sync from: #{repo_upstream}"
+    if repo_upstream.empty?
+      `#{@git} remote add upstream #{repo_upstream_url}`
     else
-      puts "\n\nSelf updating Catapult:\n".color(Colors::WHITE)
-      `#{@git} fetch`
-      # get current branch
-      branch = `#{@git} rev-parse --abbrev-ref HEAD`.strip
-      # get current repo
-      @repo = `#{@git} config --get remote.origin.url`.strip
-      puts " * Your repository: #{@repo}"
-      # set the correct upstream
-      repo_upstream = `#{@git} config --get remote.upstream.url`.strip
-      repo_upstream_url = "https://github.com/devopsgroup-io/catapult.git"
-      puts " * Will sync from: #{repo_upstream}"
-      if repo_upstream.empty?
-        `#{@git} remote add upstream #{repo_upstream_url}`
+      `#{@git} remote rm upstream`
+      `#{@git} remote add upstream #{repo_upstream_url}`
+    end
+    # get a list of branches from origin
+    @branches = `#{@git} ls-remote #{@repo}`.split(/\n/).reject(&:empty?)
+    # halt if there is no master branch
+    if not @branches.find { |element| element.include?("refs/heads/master") }
+      catapult_exception("Cannot find the master branch for your Catapult's fork, please fork again or manually correct.")
+    end
+    # create the release branch if it does not yet exist
+    if not @branches.find { |element| element.include?("refs/heads/release") }
+      `#{@git} checkout master`
+      `#{@git} checkout -b release`
+      `#{@git} push origin release`
+    end
+    # create the develop branch if it does not yet exist
+    if not @branches.find { |element| element.include?("refs/heads/develop") }
+      `#{@git} fetch upstream`
+      `#{@git} checkout -b develop --track upstream/master`
+      `#{@git} pull upstream master`
+      `#{@git} push origin develop`
+    end
+    # create the develop-catapult branch if it does not yet exist
+    if not @branches.find { |element| element.include?("refs/heads/develop-catapult") }
+      `#{@git} fetch upstream`
+      `#{@git} checkout -b develop-catapult --track upstream/master`
+      `#{@git} pull upstream master`
+      `#{@git} push origin develop-catapult`
+    end
+    # if on the master or release branch, stop user
+    if "#{branch}" == "master" || "#{branch}" == "release"
+      catapult_exception(""\
+        "You are on the #{branch} branch, all interaction should be done from either the develop or develop-catapult branch."\
+        " * The develop branch is running in test"\
+        " * The release branch is running in qc"\
+        " * The master branch is running in production"\
+        "To move your configuration from environment to environment, create pull requests (develop => release, release => master)."\
+      "")
+    end
+    puts "\n * Configuring the #{branch} branch:\n\n"
+    # if on the develop branch, update from catapult core
+    if "#{branch}" == "develop"
+      `#{@git} pull origin develop`
+      # only self update from catapult core if the same MAJOR
+      `#{@git} fetch upstream`
+      @version_this = YAML.load_file("VERSION.yml")
+      @version_this_integer = @version_this["version"].to_i
+      @version_upstream = YAML.load(`#{@git} show upstream/master:VERSION.yml`)
+      @version_upstream_integer = @version_upstream["version"].to_i
+      if @version_upstream_integer > @version_this_integer
+        puts "\n"
+        puts "#{@version_upstream["major"]["notice"]}".color(Colors::RED)
+        puts "#{@version_upstream["major"]["description"]}".color(Colors::YELLOW)
+        puts " * This Catapult instance is version #{@version_this["version"]}"
+        puts " * Catapult version #{@version_upstream["version"]} is available"
+        puts "The upgrade path warning from MAJOR version #{@version_this["version"].to_i} to #{@version_upstream["version"].to_i} is:"
+        puts " * #{@version_upstream["major"][@version_upstream_integer][@version_this_integer]}"
+        puts "Given that you are prepared for the above, please follow these instructions to upgrade manually from within the root of Catapult:"
+        puts " * `git pull --no-edit --strategy-option=theirs upstream master`"
+        puts " * `git push origin develop`"
+        puts "\n"
       else
-        `#{@git} remote rm upstream`
-        `#{@git} remote add upstream #{repo_upstream_url}`
-      end
-      # get a list of branches from origin
-      @branches = `#{@git} ls-remote #{@repo}`.split(/\n/).reject(&:empty?)
-      # halt if there is no master branch
-      if not @branches.find { |element| element.include?("refs/heads/master") }
-        catapult_exception("Cannot find the master branch for your Catapult's fork, please fork again or manually correct.")
-      end
-      # create the release branch if it does not yet exist
-      if not @branches.find { |element| element.include?("refs/heads/release") }
-        `#{@git} checkout master`
-        `#{@git} checkout -b release`
-        `#{@git} push origin release`
-      end
-      # create the develop branch if it does not yet exist
-      if not @branches.find { |element| element.include?("refs/heads/develop") }
-        `#{@git} fetch upstream`
-        `#{@git} checkout -b develop --track upstream/master`
-        `#{@git} pull upstream master`
+        `#{@git} pull --no-edit --strategy-option=theirs upstream master`
         `#{@git} push origin develop`
       end
-      # create the develop-catapult branch if it does not yet exist
-      if not @branches.find { |element| element.include?("refs/heads/develop-catapult") }
-        `#{@git} fetch upstream`
-        `#{@git} checkout -b develop-catapult --track upstream/master`
-        `#{@git} pull upstream master`
-        `#{@git} push origin develop-catapult`
-      end
-      # if on the master or release branch, stop user
-      if "#{branch}" == "master" || "#{branch}" == "release"
-        catapult_exception(""\
-          "You are on the #{branch} branch, all interaction should be done from either the develop or develop-catapult branch."\
-          " * The develop branch is running in test"\
-          " * The release branch is running in qc"\
-          " * The master branch is running in production"\
-          "To move your configuration from environment to environment, create pull requests (develop => release, release => master)."\
-        "")
-      end
-      puts "\n * Configuring the #{branch} branch:\n\n"
-      # if on the develop branch, update from catapult core
-      if "#{branch}" == "develop"
-        `#{@git} pull origin develop`
-        # only self update from catapult core if the same MAJOR
-        `#{@git} fetch upstream`
-        @version_this = YAML.load_file("VERSION.yml")
-        @version_this_integer = @version_this["version"].to_i
-        @version_upstream = YAML.load(`#{@git} show upstream/master:VERSION.yml`)
-        @version_upstream_integer = @version_upstream["version"].to_i
-        if @version_upstream_integer > @version_this_integer
-          puts "\n"
-          puts "#{@version_upstream["major"]["notice"]}".color(Colors::RED)
-          puts "#{@version_upstream["major"]["description"]}".color(Colors::YELLOW)
-          puts " * This Catapult instance is version #{@version_this["version"]}"
-          puts " * Catapult version #{@version_upstream["version"]} is available"
-          puts "The upgrade path warning from MAJOR version #{@version_this["version"].to_i} to #{@version_upstream["version"].to_i} is:"
-          puts " * #{@version_upstream["major"][@version_upstream_integer][@version_this_integer]}"
-          puts "Given that you are prepared for the above, please follow these instructions to upgrade manually from within the root of Catapult:"
-          puts " * `git pull upstream master`"
-          puts " * `git push origin develop`"
-          puts "\n"
-        else
-          `#{@git} pull upstream master`
-          `#{@git} push origin develop`
-        end
-      end
-      # if on the develop-catapult branch, update from catapult core, and checkout secrets from develop
-      if "#{branch}" == "develop-catapult"
-        `#{@git} checkout develop -- secrets/configuration.yml.gpg`
-        `#{@git} checkout develop -- secrets/id_rsa.gpg`
-        `#{@git} checkout develop -- secrets/id_rsa.pub.gpg`
-        `#{@git} reset HEAD secrets/configuration.yml.gpg`
-        `#{@git} reset HEAD secrets/id_rsa.gpg`
-        `#{@git} reset HEAD secrets/id_rsa.pub.gpg`
-        `#{@git} pull origin develop-catapult`
-        `#{@git} pull upstream master`
-        `#{@git} push origin develop-catapult`
-      end
+    end
+    # if on the develop-catapult branch, update from catapult core, and checkout secrets from develop
+    if "#{branch}" == "develop-catapult"
+      `#{@git} checkout develop -- secrets/configuration.yml.gpg`
+      `#{@git} checkout develop -- secrets/id_rsa.gpg`
+      `#{@git} checkout develop -- secrets/id_rsa.pub.gpg`
+      `#{@git} reset HEAD secrets/configuration.yml.gpg`
+      `#{@git} reset HEAD secrets/id_rsa.gpg`
+      `#{@git} reset HEAD secrets/id_rsa.pub.gpg`
+      `#{@git} pull origin develop-catapult`
+      `#{@git} pull upstream master`
+      `#{@git} push origin develop-catapult`
     end
     # create a git pre-commit hook to ensure only configuration is committed to only the develop branch
     FileUtils.mkdir_p(".git/hooks")
@@ -333,7 +358,8 @@ module Catapult
     elsif "#{branch}" == "develop"
       puts " * You are on the develop branch, this branch contains your unique secrets/configuration.yml.gpg, secrets/id_rsa.gpg, and secrets/id_rsa.pub.gpg secrets/configuration."
       puts " * The develop branch is running in the localdev and test environments, please first test then commit your configuration to the develop branch."
-      puts " * Once you're satisified with your new configuration in localdev and test, create a pull request from develop into master."
+      puts " * Once you're satisified with your new configuration in localdev and test, create a pull request from develop into release."
+      puts " * Once you're satisified with your new configuration in qc, create a pull request from release into master."
       if @configuration_user["settings"]["gpg_edit"]
         puts " * GPG Edit Mode is enabled at secrets/configuration-user.yml[\"settings\"][\"gpg_edit\"], if there are changes to secrets/configuration.yml, secrets/id_rsa, or secrets/id_rsa.pub, they will be re-encrypted."
       end
@@ -406,7 +432,6 @@ module Catapult
     if $?.exitstatus > 0
       catapult_exception("Your configuration could not be decrypted, please confirm your team's gpg_key is correct in secrets/configuration-user.yml")
     end
-    configuration_example = YAML.load_file("secrets/configuration.yml.template")
     `gpg --verbose --batch --yes --passphrase "#{@configuration_user["settings"]["gpg_key"]}" --output secrets/id_rsa --decrypt secrets/id_rsa.gpg`
     if $?.exitstatus > 0
       catapult_exception("Your configuration could not be decrypted, please confirm your team's gpg_key is correct in secrets/configuration-user.yml")
@@ -415,6 +440,8 @@ module Catapult
     if $?.exitstatus > 0
       catapult_exception("Your configuration could not be decrypted, please confirm your team's gpg_key is correct in secrets/configuration-user.yml")
     end
+    # load provisioners yaml file
+    @provisioners = YAML.load_file("provisioners/provisioners.yml")
 
 
 
@@ -442,7 +469,7 @@ module Catapult
         request.add_field "Authorization", "Bearer #{@configuration["company"]["digitalocean_personal_access_token"]}"
         response = http.request request
         if response.code.to_f.between?(399,499)
-          catapult_exception("The DigitalOcean API could not authenticate, please verify [\"company\"][\"digitalocean_personal_access_token\"].")
+          catapult_exception("#{response.code} The DigitalOcean API could not authenticate, please verify [\"company\"][\"digitalocean_personal_access_token\"].")
         elsif response.code.to_f.between?(500,600)
           puts "   - The DigitalOcean API seems to be down, skipping... (this may impact provisioning and automated deployments)".color(Colors::RED)
         else
@@ -482,13 +509,13 @@ module Catapult
     if @configuration["company"]["bitbucket_username"] == nil || @configuration["company"]["bitbucket_password"] == nil
       catapult_exception("Please set [\"company\"][\"bitbucket_username\"] and [\"company\"][\"bitbucket_password\"] in secrets/configuration.yml")
     else
-      uri = URI("https://api.bitbucket.org/1.0/user/repositories")
+      uri = URI("https://api.bitbucket.org/1.0/user")
       Net::HTTP.start(uri.host, uri.port, :use_ssl => uri.scheme == 'https') do |http|
         request = Net::HTTP::Get.new uri.request_uri
         request.basic_auth "#{@configuration["company"]["bitbucket_username"]}", "#{@configuration["company"]["bitbucket_password"]}"
         response = http.request request
         if response.code.to_f.between?(399,499)
-          catapult_exception("The Bitbucket API could not authenticate, please verify [\"company\"][\"bitbucket_username\"] and [\"company\"][\"bitbucket_password\"].")
+          catapult_exception("#{response.code} The Bitbucket API could not authenticate, please verify [\"company\"][\"bitbucket_username\"] and [\"company\"][\"bitbucket_password\"].")
         elsif response.code.to_f.between?(500,600)
           puts "   - The Bitbucket API seems to be down, skipping... (this may impact provisioning and automated deployments)".color(Colors::RED)
         else
@@ -537,7 +564,7 @@ module Catapult
         request.basic_auth "#{@configuration["company"]["github_username"]}", "#{@configuration["company"]["github_password"]}"
         response = http.request request
         if response.code.to_f.between?(399,499)
-          catapult_exception("The GitHub API could not authenticate, please verify [\"company\"][\"github_username\"] and [\"company\"][\"github_password\"].")
+          catapult_exception("#{response.code} The GitHub API could not authenticate, please verify [\"company\"][\"github_username\"] and [\"company\"][\"github_password\"].")
         elsif response.code.to_f.between?(500,600)
           puts "   - The GitHub API seems to be down, skipping... (this may impact provisioning and automated deployments)".color(Colors::RED)
         else
@@ -586,7 +613,7 @@ module Catapult
         request.basic_auth "#{@configuration["company"]["bamboo_username"]}", "#{@configuration["company"]["bamboo_password"]}"
         response = http.request request
         if response.code.to_f.between?(399,499)
-          catapult_exception("The Bamboo API could not authenticate, please verify [\"company\"][\"bamboo_base_url\"] and [\"company\"][\"bamboo_username\"] and [\"company\"][\"bamboo_password\"].")
+          catapult_exception("#{response.code} The Bamboo API could not authenticate, please verify [\"company\"][\"bamboo_base_url\"] and [\"company\"][\"bamboo_username\"] and [\"company\"][\"bamboo_password\"].")
         elsif response.code.to_f.between?(500,600)
           puts "   - The Bamboo API seems to be down, skipping... (this may impact provisioning and automated deployments)".color(Colors::RED)
         else
@@ -720,7 +747,7 @@ module Catapult
         request.add_field "content-type", "application/json" #@todo this doesn't seem to work
         response = http.request request
         if response.code.to_f.between?(399,499)
-          catapult_exception("The AWS API could not authenticate, please verify [\"company\"][\"aws_access_key\"] and [\"company\"][\"aws_secret_key\"].")
+          catapult_exception("#{response.code} The AWS API could not authenticate, please verify [\"company\"][\"aws_access_key\"] and [\"company\"][\"aws_secret_key\"].")
         elsif response.code.to_f.between?(500,600)
           puts "   - The AWS API seems to be down, skipping... (this may impact provisioning and automated deployments)".color(Colors::RED)
         else
@@ -740,7 +767,7 @@ module Catapult
         request.add_field "X-Auth-Email", "#{@configuration["company"]["cloudflare_email"]}"
         response = http.request request
         if response.code.to_f.between?(399,499)
-          catapult_exception("The CloudFlare API could not authenticate, please verify [\"company\"][\"cloudflare_api_key\"] and [\"company\"][\"cloudflare_email\"].")
+          catapult_exception("#{response.code} The CloudFlare API could not authenticate, please verify [\"company\"][\"cloudflare_api_key\"] and [\"company\"][\"cloudflare_email\"].")
         elsif response.code.to_f.between?(500,600)
           puts "   - The CloudFlare API seems to be down, skipping... (this may impact provisioning and automated deployments)".color(Colors::RED)
         else
@@ -759,7 +786,7 @@ module Catapult
         request.add_field "X-Api-Key", "#{@configuration["company"]["newrelic_api_key"]}"
         response = http.request request
         if response.code.to_f.between?(399,499)
-          catapult_exception("The New Relic API could not authenticate, please verify [\"company\"][\"newrelic_api_key\"] and [\"company\"][\"newrelic_license_key\"].")
+          catapult_exception("#{response.code} The New Relic API could not authenticate, please verify [\"company\"][\"newrelic_api_key\"] and [\"company\"][\"newrelic_license_key\"].")
         elsif response.code.to_f.between?(500,600)
           puts "   - The New Relic API seems to be down, skipping... (this may impact provisioning and automated deployments)".color(Colors::RED)
         else
@@ -778,7 +805,8 @@ module Catapult
         request.add_field "X-Api-Key", "#{@configuration["company"]["newrelic_admin_api_key"]}"
         response = http.request request
         if response.code.to_f.between?(399,499)
-          catapult_exception("The New Relic Admin API could not authenticate, please verify [\"company\"][\"newrelic_admin_api_key\"].")
+          puts " * New Relic Admin API could not authenticate (Synthetics tests will not be created).".color(Colors::YELLOW)
+          #catapult_exception("#{response.code} The New Relic Admin API could not authenticate, please verify [\"company\"][\"newrelic_admin_api_key\"].")
         elsif response.code.to_f.between?(500,600)
           puts "   - The New Relic Admin API seems to be down, skipping... (this may impact provisioning and automated deployments)".color(Colors::RED)
         else
@@ -796,7 +824,7 @@ module Catapult
       request.add_field "Authorization", "Bearer #{@configuration["company"]["digitalocean_personal_access_token"]}"
       response = http.request request
       if response.code.to_f.between?(399,499)
-        catapult_exception("The DigitalOcean API could not authenticate, please verify [\"company\"][\"digitalocean_personal_access_token\"].")
+        catapult_exception("#{response.code} The DigitalOcean API could not authenticate, please verify [\"company\"][\"digitalocean_personal_access_token\"].")
       elsif response.code.to_f.between?(500,600)
         puts "   - The DigitalOcean API seems to be down, skipping... (this may impact provisioning and automated deployments)".color(Colors::RED)
       else
@@ -807,6 +835,9 @@ module Catapult
         end
       end
     end
+
+
+
     # validate @configuration["environments"]
     @configuration["environments"].each do |environment,data|
       #validate digitalocean droplets
@@ -893,7 +924,7 @@ module Catapult
         end
       
       end
-      # if server passwords do not exist, create them
+      # if environment passwords do not exist, create them
       unless @configuration["environments"]["#{environment}"]["servers"]["redhat_mysql"]["mysql"]["user_password"]
         @configuration["environments"]["#{environment}"]["servers"]["redhat_mysql"]["mysql"]["user_password"] = SecureRandom.urlsafe_base64(16)
         `gpg --verbose --batch --yes --passphrase "#{@configuration_user["settings"]["gpg_key"]}" --output secrets/configuration.yml --decrypt secrets/configuration.yml.gpg`
@@ -902,6 +933,12 @@ module Catapult
       end
       unless @configuration["environments"]["#{environment}"]["servers"]["redhat_mysql"]["mysql"]["root_password"]
         @configuration["environments"]["#{environment}"]["servers"]["redhat_mysql"]["mysql"]["root_password"] = SecureRandom.urlsafe_base64(16)
+        `gpg --verbose --batch --yes --passphrase "#{@configuration_user["settings"]["gpg_key"]}" --output secrets/configuration.yml --decrypt secrets/configuration.yml.gpg`
+        File.open('secrets/configuration.yml', 'w') {|f| f.write configuration.to_yaml }
+        `gpg --verbose --batch --yes --passphrase "#{@configuration_user["settings"]["gpg_key"]}" --output secrets/configuration.yml.gpg --armor --cipher-algo AES256 --symmetric secrets/configuration.yml`
+      end
+      unless @configuration["environments"]["#{environment}"]["software"]["admin_password"]
+        @configuration["environments"]["#{environment}"]["software"]["admin_password"] = SecureRandom.urlsafe_base64(16)
         `gpg --verbose --batch --yes --passphrase "#{@configuration_user["settings"]["gpg_key"]}" --output secrets/configuration.yml --decrypt secrets/configuration.yml.gpg`
         File.open('secrets/configuration.yml', 'w') {|f| f.write configuration.to_yaml }
         `gpg --verbose --batch --yes --passphrase "#{@configuration_user["settings"]["gpg_key"]}" --output secrets/configuration.yml.gpg --armor --cipher-algo AES256 --symmetric secrets/configuration.yml`
@@ -919,6 +956,15 @@ module Catapult
         `gpg --verbose --batch --yes --passphrase "#{@configuration_user["settings"]["gpg_key"]}" --output secrets/configuration.yml.gpg --armor --cipher-algo AES256 --symmetric secrets/configuration.yml`
       end
     end
+
+
+
+    # remove lock file
+    File.delete('.lock')
+
+
+
+    # validate @configuration["websites"]
     puts "\nVerification of configuration[\"websites\"]:\n".color(Colors::WHITE)
     # add catapult temporarily to verify repo and add bamboo services
     @configuration["websites"]["catapult"] = *(["domain" => "#{@repo}", "repo" => "#{@repo}"])
@@ -1287,8 +1333,13 @@ module Catapult
           puts "   - Configured Bamboo service for automated deployments."
           # validate software
           unless instance["software"] == nil
-            unless ["codeigniter2","codeigniter3","drupal6","drupal7","silverstripe","wordpress","xenforo"].include?("#{instance["software"]}")
-              catapult_exception("There is an error in your secrets/configuration.yml file.\nThe software for websites => #{service} => domain => #{instance["domain"]} is invalid, it must be one of the following [\"codeigniter2\",\"drupal6\",\"drupal7\",\"wordpress\",\"xenforo\"].")
+            # create an array of available software
+            provisioners_software = Array.new
+            unless @provisioners["software"]["#{service}"] == nil
+              @provisioners["software"]["#{service}"].each { |i, v| provisioners_software.push(i) }
+            end
+            unless provisioners_software.include?("#{instance["software"]}")
+              catapult_exception("There is an error in your secrets/configuration.yml file.\nThe software for websites => #{service} => domain => #{instance["domain"]} is invalid, it must be one of the following #{provisioners_software.join(", ")}.")
             end
             unless ["downstream","upstream"].include?("#{instance["software_workflow"]}")
               catapult_exception("There is an error in your secrets/configuration.yml file.\nThe software for websites => #{service} => domain => #{instance["domain"]} requires the software_workflow option, it must be one of the following [\"downstream\",\"upstream\"].")
@@ -1310,6 +1361,7 @@ module Catapult
     end
     # remove catapult as this was done to temporarily verify repo and add bamboo services
     @configuration["websites"].delete("catapult")
+
 
 
     # create arrays of domains for localdev hosts file
@@ -1334,9 +1386,6 @@ module Catapult
     end
 
 
-    # remove lock file
-    File.delete('.lock')
-
 
     # vagrant status binding
     if ["status"].include?(ARGV[0])
@@ -1345,31 +1394,29 @@ module Catapult
       puts "\n\n\nAvailable websites legend:".color(Colors::WHITE)
       puts "\n[http response codes]"
       puts " * The below http response codes are started from http:// and up to 10 redirects allowed - so if you're forcing https://, you will end up with that code below."
-      puts " * 200 ok, 301 moved permanently, 302 found, 400 bad request, 401 unauthorized, 403 forbidden, 404 not found, 500 internal server error, 502 bad gateway, 503 service unavailable, 504 gateway timeout"
-      puts " * http://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html"
+      puts "   - 200 ok, 301 moved permanently, 302 found"
+      puts "   - 400 bad request, 401 unauthorized, 403 forbidden, 404 not found"
+      puts "   - 500 internal server error, 502 bad gateway, 503 service unavailable, 504 gateway timeout"
+      puts "   - For a complete list, please visit http://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html"
       puts " * Keep in mind these response codes and nslookups are from within your network - they may differ externally if you're running your own DNS server internally."
       puts "\nAvailable websites:".color(Colors::WHITE)
-      puts "".ljust(42) + "[software]".ljust(14) + "[workflow]".ljust(14) + "[80:dev.]".ljust(21) + "[80:test.]".ljust(21) + "[80:qc.]".ljust(21) + "[80:production]"
 
       @configuration["websites"].each do |service,data|
-        if @configuration["websites"]["#{service}"] == nil
-          puts "\n[#{service}]"
-          puts " * none"
-        else
-          puts "\n[#{service}]"
+        puts "\n[#{service}] #{@configuration["websites"]["#{service}"].nil? ? "0" : @configuration["websites"]["#{service}"].length} websites"
+        puts "[domain]".ljust(40) + "[domain_tld_override]".ljust(30) + "[software]".ljust(21) + "[workflow]".ljust(14) + "[80:dev.]".ljust(22) + "[80:test.]".ljust(22) + "[80:qc.]".ljust(22) + "[80:production]"
+        puts "\n"
+        if @configuration["websites"]["#{service}"] != nil
           @configuration["websites"]["#{service}"].each do |instance|
             # count websites
             totalwebsites = totalwebsites + 1
             # start new row
             row = Array.new
-            # get domain name
-            if instance["domain_tld_override"] == nil
-              row.push(" * #{instance["domain"]}".ljust(41))
-            else
-              row.push(" * #{instance["domain"]}.#{instance["domain_tld_override"]}".ljust(41))
-            end
+            # get domain
+            row.push(" * #{instance["domain"]}".slice!(0, 39).ljust(39))
+            # get domain_tld_override
+            row.push("#{instance["domain_tld_override"]}".slice!(0, 29).ljust(29))
             # get software
-            row.push((instance["software"] || "").ljust(13))
+            row.push((instance["software"] || "").ljust(20))
             # get software workflow
             row.push((instance["software_workflow"] || "").ljust(13))
             # get http response code per environment
@@ -1425,7 +1472,7 @@ module Catapult
               rescue OpenSSL::SSL::SSLError
                 row.push("err".ljust(4).color(Colors::RED))
               rescue Exception => ex
-                row.push("#{ex.class}".ljust(4).color(Colors::RED))
+                row.push("#{ex.class}".slice!(0, 4).ljust(4).color(Colors::RED))
               end
               # nslookup production top-level domain
               begin
@@ -1442,11 +1489,6 @@ module Catapult
           end
         end
       end
-      # start a new row
-      row = Array.new
-      puts "\n[total]"
-      row.push(" #{totalwebsites}")
-      puts row.join(" ")
     end
 
 
