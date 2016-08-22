@@ -1,11 +1,16 @@
 # Catapult #
 <img src="https://cdn.rawgit.com/devopsgroup-io/catapult/master/repositories/apache/_default_/svg/catapult.svg" alt="Catapult" width="200">
 
+Catapult defines a best-practice infrastructure so you don't have to - it also aligns with Agile methodologies, like Scrum, to afford you everything you need to develop and deploy a website with ease.
+
+<img src="https://cdn.rawgit.com/devopsgroup-io/catapult/master/catapult/installers/images/catapult_infrastructure.png" alt="Catapult Infrastructure">
+
 :boom: **Catapult** is a complete website and workflow management platform built from leading and affordable technologies.
 
 :earth_americas: **Our mission** is to create a lean platform which orchestrates DevOps for website lifecycles with familiar technologies.
 
 :rocket: **Our vision** is to afford organizations reduced risk and improved performance while lowering barriers to entry.
+
 
 <br>
 
@@ -88,7 +93,7 @@ MediaWiki 1                       | `mediawiki1`           | December 8, 2003   
 Moodle 3                          | `moodle3`              | November 16, 2015  |
 SilverStripe 3                    | `silverstripe3`        | June 29, 2012      |
 SuiteCRM 7                        | `suitecrm7`            | October 21, 2013   |
-WordPress >=3.5.2                 | `wordpress`            | June 17, 2010      |
+WordPress >=3.7                   | `wordpress`            | June 17, 2010      |
 WordPress 4                       | `wordpress`            | September 4, 2014  |
 XenForo 1                         | `xenforo`              | March 8, 2011      |
 Zend Framework 2.0.x <=2.4.x      | `zendframework2`       | September 5, 2012  |
@@ -165,7 +170,7 @@ See an error or have a suggestion? Email competition@devopsgroup.io - we appreci
         - [Connecting to Databases](#connecting-to-databases)
         - [Hotfixes](#hotfixes)
     - [Performance Testing](#performance-testing)
-        - [Website Concurrency Maxiumum](#website-concurrency-maximum)
+        - [Website Concurrency Maximum](#website-concurrency-maximum)
         - [Interpreting Apache AB Results](#interpreting-apache-ab-results)
     - [Disaster Recovery](#disaster-recovery)
         - [Server Rebuilding](#server-rebuilding) 
@@ -834,11 +839,13 @@ With Catapult's exactly duplicated configuration, even the Test environment can 
 
 ApacheBench enables us to profile request performance (`-n` represents the number of requests to perform) and concurrency (`-c` represents the number of multiple requests to make at a time) to test for performance, including common limits such as [C10k and C10M](http://highscalability.com/blog/2013/5/13/the-secret-to-10-million-concurrent-connections-the-kernel-i.html).
 
-### Website Concurrency Maxiumum ###
+### Website Concurrency Maximum ###
 
 Using a website with historical Google Analytics data, access the Audience Overview and find the busiest Pageview day from the past 30-days and then drill into that date. Find the hour with the most Pageviews, then the accompanying Avg. Session Duration. Using the following formula, we are able to find the Concurrency Maxiumum.
 
 *(Pageviews x Avg. Session Duration in seconds) / 3,600 seconds* = **Concurrency Maxiumum**
+
+<img src="https://cdn.rawgit.com/devopsgroup-io/catapult/master/catapult/installers/images/catapult_website_concurrency_maximum.png" alt="Catapult Website Concurrency Maximum">
 
 **365,000 pageviews per month**
 
@@ -1036,7 +1043,6 @@ The Catapult team values partnerships and continuous improvement.
 Catapult is making the conference tour! We plan to attend the following conferences, with more to come. Get a chance to see Catapult in action, presented by it's core developers.
 
 * Spring 2016 [04-08-2016] [Drupaldelphia](http://drupaldelphia.com/): DevOps Discipline: Detailed and Complete
-* Summer 2016 [Wharton Web Conference](http://www.sas.upenn.edu/wwc/)
 * Winter 2016 [WordCamp US](http://us.wordcamp.org/)
 
 
@@ -1045,12 +1051,12 @@ Catapult is making the conference tour! We plan to attend the following conferen
 
 Catapult will also be seen throughout local meetups in the Philadelphia and Greater Philadelphia area! Get a chance to meet the team and engage at a personal level.
 
-* [Philly Tech Meetup](http://www.meetup.com/philly-tech/) 4k+ technologists
-* [Princeton Tech ](http://www.meetup.com/Princeton-Tech/) 3.5k+ technologists
-* [Technical.ly Philly](http://www.meetup.com/Technically-Philly/) 3k+ technologists
+* [Technical.ly Philly](http://www.meetup.com/Technically-Philly/) 6k+ technologists
+* [Princeton Tech](http://www.meetup.com/Princeton-Tech/) 4.5k+ technologists
+* [Tech in Motion Philly](http://www.meetup.com/TechinMotionPhilly/) 4k+ technologists
 * [Philadelphia WordPress Meetup Group](http://www.meetup.com/philadelphia-wordpress-meetup-group/) 1.5k+ technologists
-* [Philly DevOps](http://www.meetup.com/PhillyDevOps/) 700+ technologists
-* [Greater Philadelphia Drupal Meetup Group](http://www.meetup.com/drupaldelphia/) 500+ technologists
+* [Philly DevOps](http://www.meetup.com/PhillyDevOps/) 1k+ technologists
+* [Greater Philadelphia Drupal Meetup Group](http://www.meetup.com/drupaldelphia/) .5k+ technologists
 
 
 
