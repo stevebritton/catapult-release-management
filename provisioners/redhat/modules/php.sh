@@ -14,6 +14,8 @@ sed -i -e "s#\;date\.timezone.*#date.timezone = \"$(catapult company.timezone_re
 sed -i -e "s#\upload_max_filesize.*#upload_max_filesize = 10M#g" /etc/php.ini
 # hide x-powered-by
 sed -i -e "s#\expose_php.*#expose_php = Off#g" /etc/php.ini
+# increase php memory limit for tools like composer
+sed -i -e "s#\memory_limit.*#memory_limit = 256M#g" /etc/php.ini
 
 # bundled extensions
 # These extensions are bundled with PHP.
@@ -67,6 +69,13 @@ sudo wget --quiet --read-timeout=10 --tries=5 --output-document=/usr/share/GeoIP
 sudo gunzip --force /usr/share/GeoIP/GeoIPCity.dat.gz
 sudo wget --quiet --read-timeout=10 --tries=5 --output-document=/usr/share/GeoIP/GeoIPASNum.dat.gz  http://download.maxmind.com/download/geoip/database/asnum/GeoIPASNum.dat.gz
 sudo gunzip --force /usr/share/GeoIP/GeoIPASNum.dat.gz
+#################
+# pecl extension: uploadprogress
+# http://pecl.php.net/package/uploadprogress
+sudo pecl upgrade uploadprogress
+#################
+# output installed pecl extensions once finished
+sudo pecl list
 
 # reload httpd configuration for changes to reflect
 # reload httpd to clear zend opcache

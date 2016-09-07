@@ -4,16 +4,24 @@ function resources() {
 
     cpu_utilization=$(top -bn 1 | awk '{print $9}' | tail -n +8 | awk '{s+=$1} END {print s}')
     if [ "${cpu_utilization%.*}" -gt 80 ]; then
-        output_cpu_utilization="![${cpu_utilization%.*}% cpu]"
+        output_cpu_utilization=$(printf "![cpu %4s]" ${cpu_utilization%.*}%)
     else
-        output_cpu_utilization=" [${cpu_utilization%.*}% cpu]"
+        output_cpu_utilization=$(printf " [cpu %4s]" ${cpu_utilization%.*}%)
     fi
 
     mem_total=$(free --mega | grep "Mem:" | awk '{print $2}')
-    mem_utilization=$(free --mega | grep "Mem:" | awk '{print $3}')
+    mem_usage=$(free --mega | grep "Mem:" | awk '{print $3}')
+    mem_utilization=$(free | grep "Mem:" | awk '{print $3/$2 * 100.0}')
+    if [ "${mem_utilization%.*}" -gt 80 ]; then
+        output_mem_utilization="![mem ${mem_utilization%.*}% ${mem_usage}/${mem_total}MB]"
+    else
+        output_mem_utilization=" [mem ${mem_utilization%.*}% ${mem_usage}/${mem_total}MB]"
+    fi
 
     swap_total=$(free --mega | grep "Swap:" | awk '{print $2}')
-    swap_utilization=$(free --mega | grep "Swap:" | awk '{print $3}')
+    swap_usage=$(free --mega | grep "Swap:" | awk '{print $3}')
+    swap_utilization=$(free | grep "Swap:" | awk '{print $3/$2 * 100.0}')
+    output_swap_utilization="[swap ${swap_utilization%.*}% ${swap_usage}/${swap_total}MB]"
 
     eth0_name=$(cat /proc/net/dev | tail -n +3 | sed -n '1p' | awk '{print $1}')
     eth0_rx=$(cat /proc/net/dev | tail -n +3 | sed -n '1p' | awk '{print $2}' | awk '{ var = $1 / 1024 / 1024 ; print var }')
@@ -24,22 +32,22 @@ function resources() {
     eth1_tx=$(cat /proc/net/dev | tail -n +3 | sed -n '2p' | awk '{print $10}' | awk '{ var = $1 / 1024 / 1024 ; print var }')
 
     module_processes_started=$(ls -l /catapult/provisioners/redhat/logs/${module}.*.log 2>/dev/null | wc -l)
-    module_processes_completed=$(ls -l /catapult/provisioners/redhat/logs/${module}.*.complete 2>/dev/null | wc -l)
-    module_processes_active=$(( $module_processes_started - $module_processes_completed ))
+    module_processes_complete=$(ls -l /catapult/provisioners/redhat/logs/${module}.*.complete 2>/dev/null | wc -l)
+    module_processes_active=$(( $module_processes_started - $module_processes_complete ))
     if [ "${module_processes_active}" -gt 4 ]; then
-        output_module_processes="![${module_processes_active} active / ${module_processes_completed} completed]"
+        output_module_processes="![$(printf "%-2s" ${module_processes_active}) active - $(printf "%-2s" ${module_processes_complete}) complete]"
     else
-        output_module_processes=" [${module_processes_active} active / ${module_processes_completed} completed]"
+        output_module_processes=" [$(printf "%-2s" ${module_processes_active}) active - $(printf "%-2s" ${module_processes_complete}) complete]"
     fi
 
     echo -e " \
 > managing parallel processes \
 ${output_module_processes} \
 ${output_cpu_utilization} \
-[${mem_utilization}MB / ${mem_total}MB mem] \
-[${swap_utilization}MB / ${swap_total}MB swap] \
-[${eth0_name} ${eth0_rx%.*}MB rx ${eth0_tx%.*}MB tx] \
-[${eth1_name} ${eth1_rx%.*}MB rx ${eth1_tx%.*}MB tx] \
+${output_mem_utilization} \
+${output_swap_utilization} \
+[${eth0_name//:} ${eth0_rx%.*}rx:${eth0_tx%.*}tx MB] \
+[${eth1_name//:} ${eth1_rx%.*}rx:${eth1_tx%.*}tx MB] \
     "
 }
 
@@ -75,23 +83,23 @@ if [ $(cat "/catapult/provisioners/provisioners.yml" | shyaml get-values-0 redha
     # loop through each required module
     cat "/catapult/provisioners/provisioners.yml" | shyaml get-values-0 redhat.servers.redhat.$4.modules |
     while read -r -d $'\0' module; do
+        # cleanup leftover utility files
+        for file in /catapult/provisioners/redhat/logs/${module}.*.log; do
+            if [ -e "$file" ]; then
+                rm $file
+            fi
+        done
+        for file in /catapult/provisioners/redhat/logs/${module}.*.complete; do
+            if [ -e "$file" ]; then
+                rm $file
+            fi
+        done
         start=$(date +%s)
         echo -e "\n\n\n==> MODULE: ${module}"
         echo -e "==> DESCRIPTION: $(cat "/catapult/provisioners/provisioners.yml" | shyaml get-value redhat.modules.${module}.description)"
         echo -e "==> MULTITHREADING: $(cat "/catapult/provisioners/provisioners.yml" | shyaml get-value redhat.modules.${module}.multithreading)"
         # if multithreading is supported
         if ([ $(cat "/catapult/provisioners/provisioners.yml" | shyaml get-value redhat.modules.${module}.multithreading) == "True" ]); then
-            # cleanup leftover utility files
-            for file in /catapult/provisioners/redhat/logs/${module}.*.log; do
-                if [ -e "$file" ]; then
-                    rm $file
-                fi
-            done
-            for file in /catapult/provisioners/redhat/logs/${module}.*.complete; do
-                if [ -e "$file" ]; then
-                    rm $file
-                fi
-            done
             # enable job control
             set -m
             # create a website index to pass to each sub-process
@@ -118,6 +126,7 @@ if [ $(cat "/catapult/provisioners/provisioners.yml" | shyaml get-values-0 redha
                 domain=$(echo "${website}" | shyaml get-value domain)
                 domain_tld_override=$(echo "${website}" | shyaml get-value domain_tld_override 2>/dev/null )
                 software=$(echo "${website}" | shyaml get-value software 2>/dev/null )
+                software_auto_update=$(echo "${website}" | shyaml get-value software_auto_update 2>/dev/null )
                 software_dbprefix=$(echo "${website}" | shyaml get-value software_dbprefix 2>/dev/null )
                 software_workflow=$(echo "${website}" | shyaml get-value software_workflow 2>/dev/null )
                 # only allow a certain number of parallel bash sub-processes at once
@@ -133,34 +142,37 @@ if [ $(cat "/catapult/provisioners/provisioners.yml" | shyaml get-values-0 redha
                 echo -e "=> domain: ${domain}"
                 echo -e "=> domain_tld_override: ${domain_tld_override}"
                 echo -e "=> software: ${software}"
+                echo -e "=> software_auto_update: ${software_auto_update}"
                 echo -e "=> software_dbprefix: ${software_dbprefix}"
                 echo -e "=> software_workflow: ${software_workflow}"
                 cat "/catapult/provisioners/redhat/logs/${module}.${domain}.log" | sed 's/^/     /'
             done < <(echo "${configuration}" | shyaml get-values-0 websites.apache)
-            # cleanup leftover utility files
-            for file in /catapult/provisioners/redhat/logs/${module}.*.log; do
-                if [ -e "$file" ]; then
-                    rm $file
-                fi
-            done
-            for file in /catapult/provisioners/redhat/logs/${module}.*.complete; do
-                if [ -e "$file" ]; then
-                    rm $file
-                fi
-            done
         else
             bash "/catapult/provisioners/redhat/modules/${module}.sh" $1 $2 $3 $4
         fi
         end=$(date +%s)
         echo -e "==> MODULE: ${module}"
         echo -e "==> DURATION: $(($end - $start)) seconds"
+        # cleanup leftover utility files
+        for file in /catapult/provisioners/redhat/logs/${module}.*.log; do
+            if [ -e "$file" ]; then
+                rm $file
+            fi
+        done
+        for file in /catapult/provisioners/redhat/logs/${module}.*.complete; do
+            if [ -e "$file" ]; then
+                rm $file
+            fi
+        done
     done
 
     provisionend=$(date +%s)
+    provisiontotal=$(date -d@$(($provisionend - $provisionstart)) -u +%H:%M:%S)
     # remove configuration
     source "/catapult/provisioners/redhat/modules/catapult_clean.sh"
     echo -e "\n\n\n==> PROVISION: ${4}"
-    echo -e "==> DURATION: $(($provisionend - $provisionstart)) total seconds" | tee -a /catapult/provisioners/redhat/logs/$4.log
+    echo -e "==> FINISH: $(date)" | tee -a /catapult/provisioners/redhat/logs/$4.log
+    echo -e "==> DURATION: ${provisiontotal} total time" | tee -a /catapult/provisioners/redhat/logs/$4.log
 else
     "Error: Cannot detect the server type."
     exit 1
