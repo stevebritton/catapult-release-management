@@ -21,10 +21,15 @@ sudo systemctl reload sshd.service
 
 
 echo -e "\n> system email configuration"
-# send root's mail as company email
-sudo cat > "/root/.forward" << EOF
-"$(echo "${configuration}" | shyaml get-value company.email)"
+# prevent a billion emails from localdev
+if ([ "${1}" = "dev" ]); then
+    sudo cat "/dev/null" > "/root/.forward"
+# send root's mail as company email from upstream servers
+else
+    sudo cat > "/root/.forward" << EOF
+    "$(echo "${configuration}" | shyaml get-value company.email)"
 EOF
+fi
 
 
 
@@ -36,7 +41,7 @@ hostnamectl set-hostname "" --pretty
 if ([ "${4}" = "apache" ]); then
     hostnamectl set-hostname "$(catapult company.name | tr '[:upper:]' '[:lower:]')-${1}-redhat"
 elif ([ "${4}" = "mysql" ]); then
-    hostnamectl set-hostname "$(catapult company.name | tr '[:upper:]' '[:lower:]')-${1}-redhat-${4}"
+    hostnamectl set-hostname "$(catapult company.name | tr '[:upper:]' '[:lower:]')-${1}-redhat-mysql"
 fi
 
 
