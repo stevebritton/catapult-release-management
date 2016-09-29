@@ -49,11 +49,10 @@ security@devopsgroup.io and not by creating a GitHub issue.
 
 ## Platform Overview ##
 
-Catapult leverages the following technologies and technology services to implement key components of DevOps.
+Catapult orchestrates the following technologies and technology services to implement key components of DevOps.
 
-* **Configuration Management**
-    * Catapult
-    * Encryption - GnuPG
+* **Security Management**
+    * Configuration Secrets - GnuPG Encryption
 * **Source Code Management**
     * Catapult - Git (via GitHub)
     * Websites - Git (via GitHub or Bitbucket)
@@ -61,7 +60,7 @@ Catapult leverages the following technologies and technology services to impleme
     * Vagrant
 * **Development Virtualization**
     * VirtualBox
-* **Cloud Hosting**
+* **Cloud Virtualization**
     * DigitalOcean
 * **DNS Management**
     * CloudFlare
@@ -131,7 +130,7 @@ Dashboard - Control                           | CLI                            |
 Dashboard - Monitor                           | Web                            | Web                           | Web
 Managed Public Git Website Repository Support | GitHub & Bitbucket             | :x:                           | :x:
 Managed DNS                                   | CloudFlare                     | :x:                           | :x:
-Managed Free HTTPS/SSL                        | CloudFlare                     | :x:                           | :x:
+Managed Free HTTPS/SSL                        | CloudFlare/Let's Encrypt       | :x:                           | :x:
 Managed Server Monitoring                     | New Relic                      | :x:                           | Proprietary
 Managed Application Error Logs                | New Relic                      | Proprietary                   | Proprietary
 Managed Application Performance Monitoring    | New Relic                      | :x:                           | :x:
@@ -630,17 +629,20 @@ The following options are available:
 * `domain:`
     * required: yes
     * example: `domain: example.com`
-        * the Production canonical domain name without `www.`
-            * one subdomain level is supported (subdomain.example.com)
-        * this drives the domains of LocalDev (via hosts file) and Test, QC, Production (via CloudFlare)
-            * dev.example.com, test.example.com, qc.example.com, example.com
+    * example: `domain: subdomain.example.com`
+        * one subdomain level is supported for this root domain entry (`subdomain.example.com`)
+        * this root domain entry is the Production canonical domain name without `www.`
+            * a `www.` subdomain is created for you
+            * the key for all management orchestration of this website
+        * manages DNS of LocalDev (via hosts file) and Test, QC, Production (via CloudFlare)
+            * `dev.example.com`, `test.example.com`, `qc.example.com`, `example.com`
 * `domain_tld_override:`
     * required: no
     * example: `domain_tld_override: mycompany.com`
         * a domain name under your [name server authority](https://en.wikipedia.org/wiki/Domain_Name_System#Authoritative_name_server) to append to the top-level-domain (e.g. `.com`)
             * useful when you cannot or do not wish to host the Test/QC website at the `domain`
         * appends the `domain_tld_override` for Environments
-            * dev.example.com.mycompany.com, test.example.com.mycompany.com, qc.example.com.mycompany.com, example.com.mycompany.com
+            * `dev.example.com.mycompany.com`, `test.example.com.mycompany.com`, `qc.example.com.mycompany.com`, `example.com.mycompany.com`
         * PLEASE NOTE: When removing this option from a website with `software:`, you need to manually replace URLs in the database respective to the `software_workflow:` option.
             * ie `vagrant ssh mycompany.com-test-redhat-mysql`
             * `php /catapult/provisioners/redhat/installers/wp-cli.phar --allow-root --path="/var/www/repositories/apache/example.com/(webroot if applicable)" search-replace ":\/\/(www\.)?(dev\.|test\.)?(example\.com\.mycompany\.com)" "://example.com" --regex`
@@ -658,11 +660,12 @@ The following options are available:
     * required: no
     * option: `force_https: true`
         * rewrites all http traffic to https
-        * subdomains are not supported as limited by CloudFlare
-        * causes an unsigned cert error in LocalDev
+        * all `dev.` domains in LocalDev will have an unsigned certificate warning
+        * free SSL certificates are created and managed for you compliments of CloudFlare (single-subdomain) and Let's Encrypt (multi-subdomain)
 * `repo:`
     * required: yes
     * example: `repo: git@github.com:devopsgroup-io/devopsgroup-io.git`
+        * the existing source code repository of your website (please create one if none exists)
         * GitHub and Bitbucket over SSH are supported, HTTPS is not supported
 * `software:`
     * required: no
@@ -810,7 +813,7 @@ Software | Tool | Command | Documentation
 Oracle SQL Developer is the recommended tool, to connect to and work with, databases. It is free, commercially supported, cross-platform, and supports multiple database types.
 
 * **Download and install** [Oracle SQL Developer](http://www.oracle.com/technetwork/developer-tools/sql-developer/downloads/index.html), some platforms require the [Java SE Development Kit](http://www.oracle.com/technetwork/java/javase/downloads/jdk8-downloads-2133151.html)
-* **Install third party JDBC drivers**: Oracle SQL Developer uses JDBC, via a .jar file, to connect to different database types. To install a new JDBC connector, download the respective .jar file then from Oracle SQL Developer > Preferences > Third Party JDBC Drivers, click Add Entry.<sup>[4](#references)</sup>
+* **Install third party JDBC drivers**: Oracle SQL Developer uses JDBC, via a .jar file, to connect to different database types. To install a new JDBC connector, download the respective .jar file then from Oracle SQL Developer > Preferences > Database > Third Party JDBC Drivers, click Add Entry.<sup>[4](#references)</sup>
     * **MySQL** http://dev.mysql.com/downloads/connector/j/5.0.html
         * For convenience, you may also use `~/catapult/installers/mysql-connector-java-5.0.8-bin.jar`
     * **MSSQL** https://sourceforge.net/projects/jtds/files/jtds/
@@ -987,7 +990,7 @@ GitHub            | Repository hosting                       | [:question:](http
 
 ## HTTPS and SSL Certificates ##
 
-Catapult manages free HTTPS compliments of Cloudflare, however, depending on your compliance needs you may need to purchase SSL certificates unique to your orginazation. Once you're aware of your compliance responsiblity, you can then make a decision for purchasing and implementing SSL certificates. Catapult will soon incorporate the ability to add custom SSL certificates.
+Catapult manages free HTTPS compliments of Cloudflare and Let's Encrypt, however, depending on your compliance needs you may need to purchase SSL certificates unique to your orginazation. Once you're aware of your compliance responsiblity, you can then make a decision for purchasing and implementing SSL certificates. Catapult will soon incorporate the ability to add custom SSL certificates.
 
 Feature                                        | Domain Validation (DV certificates)                                                          | Organization Validation (OV certificates)                                                   | Extended Validation (EV certificates)
 -----------------------------------------------|----------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------
@@ -1076,7 +1079,7 @@ Catapult is making the conference tour! We plan to attend the following conferen
 
 
 
-## Local Events ##
+## Meetups ##
 
 Catapult will also be seen throughout local meetups in the Philadelphia and Greater Philadelphia area! Get a chance to meet the team and engage at a personal level.
 
@@ -1084,6 +1087,7 @@ Catapult will also be seen throughout local meetups in the Philadelphia and Grea
 * [Tech in Motion Philly](http://www.meetup.com/TechinMotionPhilly/) 4k+ technologists
 * [Philadelphia WordPress Meetup Group](http://www.meetup.com/philadelphia-wordpress-meetup-group/) 1.5k+ technologists
 * [Philly DevOps](http://www.meetup.com/PhillyDevOps/) 1k+ technologists
+    * [\[09-20-2016\]  From Pets to Serverless: Deployment Panel](https://www.meetup.com/PhillyDevOps/events/232930398/)
 * [Greater Philadelphia Drupal Meetup Group](http://www.meetup.com/drupaldelphia/) .5k+ technologists
 
 

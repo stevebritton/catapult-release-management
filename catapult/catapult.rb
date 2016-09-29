@@ -862,10 +862,9 @@ module Catapult
               puts " * DigitalOcean droplet #{@configuration["company"]["name"].downcase}-#{environment}-#{server.gsub("_","-")} has been found."
               puts "   - [status] #{droplet["status"]} [memory] #{droplet["size"]["memory"]} [vcpus] #{droplet["size"]["vcpus"]} [disk] #{droplet["size"]["disk"]} [$/month] $#{droplet["size"]["price_monthly"]}"
               puts "   - [created] #{droplet["created_at"]} [slug] #{droplet["size"]["slug"]} [region] #{droplet["region"]["name"]}"
-              puts "   - [kernel] #{droplet["kernel"]["name"]}"
               puts "   - [ipv4_public] #{droplet_ip["ip_address"]} [ipv4_private] #{droplet_ip_private["ip_address"]}"
               # make sure the droplet has the correct kernel, if not, update it
-              if "#{droplet["kernel"]["id"]}" != "7516"
+              if defined?(droplet["kernel"]["id"]).! || (defined?(droplet["kernel"]["id"]) && "#{droplet["kernel"]["id"]}" != "7516")
                 puts "   - The Kernel version must be updated to DigitalOcean GrubLoader v0.2, performing now...".color(Colors::YELLOW)
                 uri = URI("https://api.digitalocean.com/v2/droplets/#{droplet["id"]}/actions")
                 Net::HTTP.start(uri.host, uri.port, :use_ssl => uri.scheme == 'https') do |http|
@@ -886,6 +885,8 @@ module Catapult
                     puts "   - Successfully updated the kernel, moving on..."
                   end
                 end
+              else
+                puts "   - [kernel] #{droplet["kernel"]["name"]}"
               end
               # get public ip address and write to secrets/configuration.yml
               unless @configuration["environments"]["#{environment}"]["servers"]["#{server}"]["ip"] == droplet_ip["ip_address"]
