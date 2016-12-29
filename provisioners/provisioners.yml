@@ -10,6 +10,9 @@ redhat:
     apache_vhosts:
       description: "Manages HTTP and HTTPS virtual hosts and SSL certificates for websites."
       multithreading: false
+    bamboo:
+      description: "Manages the Atlassian Bamboo Server instance."
+      multithreading: false
     cloudflare_cache:
       description: "Manages CloudFlare zone cache for websites."
       multithreading: true
@@ -19,12 +22,18 @@ redhat:
     cloudflare_zones:
       description: "Manages CloudfFlare zones for websites."
       multithreading: true
+    cron:
+      description: "Manages cron tasks."
+      multithreading: false
     git:
       description: "Manages Git repositories for websites."
       multithreading: true
     git_clean:
       description: "Removes Git repositories for websites."
       multithreading: false
+    git_permissions:
+      description: "Manages Git repository permissions for websites."
+      multithreading: true
     iptables:
       description: "Manages a strict firewall to only allow necessary traffic."
       multithreading: false
@@ -66,24 +75,38 @@ redhat:
       multithreading: false
   servers:
     apache:
-      modules: ["time","system","iptables","newrelic_sysmon","git_clean","software_operations_file","git","software_config","rsync","php","software_tools","apache","apache_vhosts_clean","apache_vhosts","newrelic_apm_php","cloudflare_zones","cloudflare_dns"]
+      modules: ["time","system","iptables","newrelic_sysmon","cron","git_clean","software_operations_file","git","git_permissions","software_config","rsync","php","software_tools","cloudflare_zones","cloudflare_dns","apache","apache_vhosts_clean","apache_vhosts","newrelic_apm_php"]
+    bamboo:
+      modules: ["time","system","iptables","newrelic_sysmon","cron","bamboo"]
     mysql:
-      modules: ["time","system","iptables","newrelic_sysmon","git_clean","git","software_config","rsync","php","software_tools","software_operations_meta","mysql","cloudflare_cache","newrelic_synthetics"]
+      modules: ["time","system","iptables","newrelic_sysmon","cron","git_clean","git","git_permissions","software_config","rsync","php","software_tools","software_operations_meta","mysql","cloudflare_cache"]
 windows:
   modules:
+    cloudflare_dns:
+      description: "Manages CloudfFlare DNS A records for websites."
+      multithreading: true
+    cloudflare_zones:
+      description: "Manages CloudfFlare zones for websites."
+      multithreading: true
+    git:
+      description: "Manages Git repositories for websites."
+    git_clean:
+      description: "Removes Git repositories for websites."
     iis:
       description: "Manages the IIS service and virtual hosts for websites."
     mssql:
       description: "Manages SQL Server and databases for websites with software."
+    newrelic_sysmon:
+      description: "Manages New Relic System Monitor service."
     time:
       description: "Manages NTP service based on the company timezone."
     system:
       description: "Manages system requirements."
   servers:
     iis:
-      modules: ["time","system","iis"]
+      modules: ["time","system","newrelic_sysmon","git_clean","git","iis","cloudflare_zones","cloudflare_dns"]
     mssql:
-      modules: ["time","system","mssql"]
+      modules: ["time","system","newrelic_sysmon","git_clean","git","mssql"]
 
 software:
   apache:
@@ -105,14 +128,12 @@ software:
       repo: "https://git.drupal.org/project/drupal.git"
       branch: "6.x"
       database_config_file: "sites/default/settings.php"
-      file_store_containers: ["sites/default"]
       file_stores: ["sites/default/files"]
       version: [6]
     drupal7:
       repo: "https://git.drupal.org/project/drupal.git"
       branch: "7.x"
       database_config_file: "sites/default/settings.php"
-      file_store_containers: ["sites/default"]
       file_stores: ["sites/default/files"]
       version: [7]
     elgg1:
@@ -142,7 +163,7 @@ software:
       version: [5]
     mediawiki1:
       repo: "https://github.com/wikimedia/mediawiki.git"
-      branch: "REL1_25"
+      branch: "REL1_26"
       database_config_file: "LocalSettings.php"
       file_store_containers: ["images"]
       file_stores: ["images"]

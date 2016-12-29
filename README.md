@@ -1,7 +1,7 @@
 # Catapult #
 <img src="https://cdn.rawgit.com/devopsgroup-io/catapult/master/repositories/apache/_default_/svg/catapult.svg" alt="Catapult" width="200">
 
-Catapult defines a best-practice infrastructure so you don't have to - it also aligns with Agile methodologies, like Scrum, to afford you everything you need to develop and deploy a website with ease.
+Catapult defines a best-practice infrastructure so you don't have to - it also aligns with Agile methodologies, like Scrum, to afford you everything you need to develop, deploy, and maintain a website with ease.
 
 <img src="https://cdn.rawgit.com/devopsgroup-io/catapult/master/catapult/installers/images/catapult_infrastructure.png" alt="Catapult Infrastructure">
 
@@ -29,11 +29,11 @@ Catapult defines a best-practice infrastructure so you don't have to - it also a
 
 * Catapult is an open source, complete, and distributed architecture
 * Catapult only orchestrates - it is not required to run your infrastructure
-* Catapult uses platform native shell scripting rather than configuration management tools such as Chef, Puppet, Salt
-* Catapult overlays seamlessly with Scrum methodology
+* Catapult uses platform native shell scripting rather than configuration management tools such as Chef, Puppet, or Salt
 * Catapult features Gitflow workflow while enforcing exactly matching, branch-driven environments
-* Catapult features a unique workflow model - upstream or downstream
-* Catapult is highly cost effective
+* Catapult features a unique software workflow model - upstream or downstream
+* Catapult overlays seamlessly with Scrum methodology
+* Catapult is very cost effective
 
 *Go ahead, give* **Catapult** *a* **shot**.
 
@@ -41,15 +41,15 @@ Catapult defines a best-practice infrastructure so you don't have to - it also a
 
 ## Security Disclosure ##
 
-Security is very important to us. If you have any issue regarding security, 
-please disclose the information responsibly by sending an email to 
-security@devopsgroup.io and not by creating a GitHub issue.
+Security is very important to us. If you have any issue regarding security, please disclose the information responsibly by sending an email to security@devopsgroup.io and not by creating a GitHub issue.
 
 
 
 ## Platform Overview ##
 
-Catapult orchestrates the following technologies and technology services to implement key components of DevOps.
+Catapult orchestrates the following key components of DevOps to provide you with a full-featured infrastructure. Implementing both a Red Hat stack for PHP software and a Windows stack for .NET software.
+
+<img src="https://cdn.rawgit.com/devopsgroup-io/catapult/master/catapult/installers/images/catapult_platform_topology.png" alt="Catapult Platform Topology">
 
 * **Security Management**
     * Configuration Secrets - GnuPG Encryption
@@ -58,16 +58,21 @@ Catapult orchestrates the following technologies and technology services to impl
     * Websites - Git (via GitHub or Bitbucket)
 * **Environment Management**
     * Vagrant
-* **Development Virtualization**
-    * VirtualBox
-* **Cloud Virtualization**
-    * DigitalOcean
+* **Environment Virtualization**
+    * **Local**
+        * VirtualBox - Red Hat and Windows
+    * **Cloud**
+        * DigitalOcean - Red Hat
+        * AWS - Windows
 * **DNS Management**
-    * CloudFlare
+    * **Local**
+        * vagrant-hostmanager
+    * **Cloud**
+        * CloudFlare
 * **Continuous Integration**
-    * Automated Deployments - Bamboo
-    * Build Server - Amazon Web Services (AWS)
-* **Monitoring**
+    * **Cloud**
+        * Automated Deployments - Bamboo
+* **Monitoring and Performance**
     * Server Resources - New Relic Servers
     * Application Performance - New Relic APM
     * Browser Performance - New Relic Browsers
@@ -77,10 +82,10 @@ Catapult orchestrates the following technologies and technology services to impl
 
 ## Supported Software ##
 
-Catapult supports and intelligently manages the following software chosen from trending usage statistics from [BuiltWith](https://trends.builtwith.com/cms) and align with the [CentOS 7 trunk](http://mirror.centos.org/centos/7/os/x86_64/Packages/):
+Catapult intelligently manages the following software that has been chosen from trending usage statistics from [BuiltWith](https://trends.builtwith.com/cms) and align with the [CentOS 7 trunk](http://mirror.centos.org/centos/7/os/x86_64/Packages/):
 
-Software | Catapult Key | Released | End-of-Life
----------|--------------|----------|------------
+Software | [Key](#websites) | Released | End-of-Life
+---------|------------------|----------|------------
 CodeIgniter 2                     | `codeigniter2`         | January 28, 2011   | [October 31, 2015](http://forum.codeigniter.com/thread-61357.html)
 CodeIgniter 3                     | `codeigniter3`         | March 30, 2015     | 
 Drupal 6                          | `drupal6`              | February 13, 2008  | [February 24, 2016](https://www.drupal.org/drupal-6-eol)
@@ -109,33 +114,36 @@ The free market and competition is great - it pushes the envelope of innovation.
 
 Platform Feature | Catapult | Pantheon | Acquia
 -----------------|----------|----------|--------
-Source                                        | Open                           | Closed                        | Closed
-Subscription Feature Set                      | Bundled                        | Separated                     | Separated
-Supported Software                            | Numerous                       | 2                             | 1
-Minimum Bundled<br>Monthly Cost               | $40                            | $400                          | $134
-Websites per Instance/Subscription            | Unlimited                      | 1                             | 1
-Managed Workflow                              | Git Flow                       | :x:                           | :x:
-Managed Workflow Model                        | Upstream or Downstream         | :x:                           | :x:
-Agile Methodology Focus                       | Scrum                          | :x:                           | :x:
-Managed Continuous Integration                | :white_check_mark:             | :x:                           | :x:
-Environments                                  | LocalDev, Test, QC, Production | Multidev, Dev, Test, Live     | Dev Desktop, Dev, Stage, Prod
-Exacting Configuration                        | :white_check_mark:             | :x:<sup>[2](#references)</sup>| :x:<sup>[3](#references)</sup>
-Approach                                      | Virtual Machine                | Container                     | Virtual Machine
-Data Center                                   | DigitalOcean and AWS           | Rackspace                     | AWS
-Scaling                                       | Vertical                       | Horizontal                    | Vertical
-Scaling Management                            | Manual                         | Automatic                     | Manual
-Development Environment                       | Unlimited Local                | 5 Cloud                       | Unlimited Local
-Development Environment Approach              | Exact                          | Exact                         | Similar
-Dashboard - Control                           | CLI                            | CLI & Web                     | CLI & Web
-Dashboard - Monitor                           | Web                            | Web                           | Web
-Managed Public Git Website Repository Support | GitHub & Bitbucket             | :x:                           | :x:
-Managed DNS                                   | CloudFlare                     | :x:                           | :x:
-Managed Free HTTPS/SSL                        | CloudFlare/Let's Encrypt       | :x:                           | :x:
-Managed Server Monitoring                     | New Relic                      | :x:                           | Proprietary
-Managed Application Error Logs                | New Relic                      | Proprietary                   | Proprietary
-Managed Application Performance Monitoring    | New Relic                      | :x:                           | :x:
-Managed Browser Performance Monitoring        | New Relic                      | :x:                           | :x:
-Managed Synthetic Monitoring                  | New Relic                      | :x:                           | :x:
+Source                                        | Open                                  | Closed                        | Closed
+Subscription Feature Set                      | Bundled                               | Separated                     | Separated
+Traditional Tooling (VMs & Shell)             | :white_check_mark:                    | :x:                           | :x:
+Multi-Platform (Linux & Windows)              | :white_check_mark:                    | :x:                           | :x:
+Supported PHP Software                        | 15                                    | 2                             | 1
+Supported .NET Software                       | TBA                                   | :x:                           | :x:
+Minimum Bundled<br>Monthly Cost               | $40                                   | $400                          | $134
+Websites per Instance/Subscription            | Unlimited                             | 1                             | 1
+Managed Workflow                              | Git Flow (branch-based environments)  | :x:                           | :x:
+Managed Software Workflow Model               | Upstream or Downstream                | :x:                           | :x:
+Agile Methodology Focus                       | Scrum                                 | :x:                           | :x:
+Managed Continuous Integration                | :white_check_mark:                    | :x:                           | :x:
+Environments                                  | LocalDev, Test, QC, Production        | Multidev, Dev, Test, Live     | Dev Desktop, Dev, Stage, Prod
+Exacting Configuration                        | :white_check_mark:                    | :x:<sup>[2](#references)</sup>| :x:<sup>[3](#references)</sup>
+Approach                                      | Virtual Machine                       | Container                     | Virtual Machine
+Data Center                                   | DigitalOcean and AWS                  | Rackspace                     | AWS
+Scaling                                       | Vertical                              | Horizontal                    | Vertical
+Scaling Management                            | Manual                                | Automatic                     | Manual
+Development Environment                       | Unlimited Local                       | 5 Cloud                       | Unlimited Local
+Development Environment Approach              | Exact                                 | Exact                         | Similar
+Dashboard - Control                           | CLI                                   | CLI & Web                     | CLI & Web
+Dashboard - Monitor                           | Web                                   | Web                           | Web
+Managed Public Git Website Repository Support | GitHub & Bitbucket                    | :x:                           | :x:
+Managed DNS                                   | CloudFlare                            | :x:                           | :x:
+Managed Free HTTPS/SSL                        | CloudFlare/Let's Encrypt              | :x:                           | :x:
+Managed Server Monitoring                     | New Relic                             | :x:                           | Proprietary
+Managed Application Error Logs                | New Relic                             | Proprietary                   | Proprietary
+Managed Application Performance Monitoring    | New Relic                             | :x:                           | :x:
+Managed Browser Performance Monitoring        | New Relic                             | :x:                           | :x:
+Managed Synthetic Monitoring                  | New Relic                             | :x:                           | :x:
 
 See an error or have a suggestion? Email competition@devopsgroup.io - we appreciate all feedback.
 
@@ -157,6 +165,9 @@ See an error or have a suggestion? Email competition@devopsgroup.io - we appreci
     - [Provision Environments](#provision-environments)
     - [Configure Automated Deployments](#configure-automated-deployments)
 - [Release Management](#release-management)
+    - [Software Workflow](#software-workflow)
+        - [Downstream](#downstream)
+        - [Upstream](#upstream)
     - [Catapult Configuration](#catapult-configuration)
         - [Company](#company)
         - [Environments](#environments)
@@ -168,10 +179,13 @@ See an error or have a suggestion? Email competition@devopsgroup.io - we appreci
         - [Database Migrations](#database-migrations)
         - [Refreshing Databases](#refreshing-databases)
         - [Connecting to Databases](#connecting-to-databases)
-        - [Hotfixes](#hotfixes)
+        - [Production Hotfixes](#production-hotfixes)
     - [Performance Testing](#performance-testing)
         - [Website Concurrency Maximum](#website-concurrency-maximum)
         - [Interpreting Apache AB Results](#interpreting-apache-ab-results)
+    - [Maintenance Cycle](#maintenance-cycle)
+        - [Daily](#daily)
+        - [Weekly](#weekly)
     - [Disaster Recovery](#disaster-recovery)
         - [Server Rebuilding](#server-rebuilding) 
         - [Website Rollbacks](#website-rollbacks)
@@ -200,9 +214,9 @@ Catapult requires a [Developer Setup](#developer-setup), [Instance Setup](#insta
 
 Catapult is controlled via Vagrant and the command line of a developer's workstation - below is a list of required software that will need to be installed.
 
-* OS X workstations: 100% compatabile and tested
-* Linux workstations: 100% compatabile and tested
-* Windows workstations: Currently limited support
+* OS X workstations: Compatible and supported
+* Linux workstations: Compatible and supported
+* Windows workstations: Limited testing and support
 
 1. **Vagrant**
     * **Using OS X?**
@@ -305,18 +319,21 @@ Catapult is designed with a distributed services model, below are the required t
 
 Service | Product | Use Case | Monthly Cost
 --------|---------|----------|-------------
-Cloud Hosting | DigitalOcean | 6 Web and Database Servers | \*$30+
+&dagger;Cloud Hosting: Red Hat (PHP) | DigitalOcean | 6 Web and Database Servers | \*$30+
+&dagger;Cloud Hosting: Windows (.NET) | Amazon Web Services (AWS) | 6 Web and Database Servers | \*$80+
 Source Code Repositories | Atlassian Bitbucket | Private Repositories | Free
 Source Code Repositories | GitHub | Public Repositories | Free
 Continuous Integration | Amazon Web Services (AWS) | Build Server | \**$0+
 Continuous Integration | Atlassian Bamboo | Deployment Management | $10
 DNS | CloudFlare | Cloud DNS | Free
 Monitoring | New Relic Application (APM), Browser, Server, and \***Synthetics | Performance and Infrastructure Monitoring | Free
-**Total** | | | $40+
+**Total** | | | &dagger;$40+
+
+&dagger; Only one platform (Red Hat or Windows) is required to have a full-featured infrastructure. Generally speaking, the industry standard Red Hat platform will be used.
 
 \* Depending on load, resources may need to be increased, starting at an additional [$5 per month per server](https://www.digitalocean.com/pricing/).
 
-\** New AWS customers receive 1-year free of micro services. Beyond this period, a few websites with builds running irregularly will generally incur over a couple dollars more per month.
+\** New AWS customers receive 1-year free of micro services. Beyond this period, an example of running nightly builds for all environments only incur $2-3 per month.
 
 \*** New Relic customers receive a trial "pro" period ranging from 14-days to 30-days, however, there is [no free tier beyond the trial](#partnerships)
 
@@ -544,27 +561,42 @@ Once the Web and Database Servers are up and running, it's then time to configur
 
 # Release Management #
 
-Catapult follows Gitflow for its **infrastructure configuration** *and* **website development** model - each environment runs a specific branch and changesets are introduced into each environment by pull requests from one branch to the next.
+Catapult follows Gitflow for its **infrastructure configuration** *and* **website development** model - each environment is branch-based and changesets are introduced into each environment by pull requests from one branch to the next.
 
 <img src="https://cdn.rawgit.com/devopsgroup-io/catapult/master/catapult/installers/images/catapult_release_management.png" alt="Catapult Release Management">
 <sup>[1](#references)</sup>
 
-
-Environment | LocalDev | Test | QC | Production
+            | LocalDev | Test | QC | Production
 ------------|----------|------|----|-----------
 **Running Branch**                                       | *develop*                                                   | *develop*                                                                                                      | *release*                                                      | *master*
 **Deployments**                                          | Manually via `vagrant provision`                            | Automatically via Bamboo (new commits to **develop**)                                                          | Automatically via Bamboo (new commits to **release**)          | Manually via Bamboo
 **Testing Activities**                                   | Component Test                                              | Integration Test, System Test                                                                                  | Acceptance Test, Release Test                                  | Operational Qualification
 **Scrum Activity**                                       | Sprint Start: Development of User Stories                   | Daily Scrum                                                                                                    | Sprint Review                                                  | Sprint End: Accepted Product Release
 **Scrum Roles**                                          | Development Team                                            | Scrum Master, Development Team, Product Owner (optional)                                                       | Scrum Master, Development Team, Product Owner                  | Product Owner
-**Downstream Software Workflow - Database**              | Restore from **develop** `~/_sql` folder of website repo    | Restore from **develop** `~/_sql` folder of website repo                                                       | Restore from **release** `~/_sql` folder of website repo       | Auto-commit one backup per day (up to 500MB or 1) to **master** `~/_sql` folder of website repo during deploy
-**Downstream Software Workflow - Untracked File Stores** | rsync file stores from **Production**                       | rsync file stores from **Production**                                                                          | rsync file stores from **Production**                          | Pull file stores from **master**
-**Downstream Software Workflow - Tracked File Stores**   | Pull file stores from **develop**                           | Pull file stores from **develop**                                                                              | Pull file stores from **release**                              | Auto-commit file stores (up to 750MB each) to **master** of website repo during deploy
-**Upstream Software Workflow - Database**                | Restore from **develop** `~/_sql` folder of website repo    | Auto-commit one backup per day (up to 500MB or 1) to **develop** `~/_sql` folder of website repo during deploy | Restore from **release** `~/_sql` folder of website repo       | Restore from **master** `~/_sql` folder of website repo
-**Upstream Software Workflow - Untracked File Stores**   | rsync file stores from **Test**                             | Pull file stores from **develop**                                                                              | rsync file stores from **Test**                                | rsync file stores from **Test**
-**Upstream Software Workflow - Tracked File Stores**     | Pull file stores from **develop**                           | Auto-commit file stores (up to 750MB each) to **develop** of website repo during deploy                        | Pull file stores from **release**                              | Pull file stores from **master**
 
-**NOTE:** Catapult will automatically pull **master** into **develop** when in the **Downstream Software Workflow** direction.
+## Software Workflow ##
+
+Catapult enforces a unique solution to Release Management of a website, Software Workflow. Software Workflow offers two modes, downstream or upstream, creating a "golden environment".
+
+<img src="https://cdn.rawgit.com/devopsgroup-io/catapult/master/catapult/installers/images/catapult_software_workflow.png" alt="Catapult Software Workflow">
+
+### Downstream ###
+
+            | LocalDev | Test | QC | Production
+------------|----------|------|----|-----------
+**Downstream Software Workflow - Database**              | Restore from **develop** `~/_sql` folder of website repo    | Restore from **develop** `~/_sql` folder of website repo                                                       | Restore from **release** `~/_sql` folder of website repo       | Auto-commit one backup per day (up to 500MB or 1) to **master** `~/_sql` folder of website repo
+**Downstream Software Workflow - Untracked File Stores** | rsync file stores from **Production**                       | rsync file stores from **Production**                                                                          | rsync file stores from **Production**                          | 
+**Downstream Software Workflow - Tracked File Stores**   | Pull file stores from **develop**                           | Pull file stores from **develop**                                                                              | Pull file stores from **release**                              | Auto-commit file stores (up to 750MB each) to **master** of website repo
+
+**NOTE:** Catapult will automatically pull the **master** branch into the **develop** branch of a website's repository when in the **Downstream Software Workflow** direction.
+
+### Upstream ###
+
+            | LocalDev | Test | QC | Production
+------------|----------|------|----|-----------
+**Upstream Software Workflow - Database**                | Restore from **develop** `~/_sql` folder of website repo    | Auto-commit one backup per day (up to 500MB or 1) to **develop** `~/_sql` folder of website repo | Restore from **release** `~/_sql` folder of website repo       | Restore from **master** `~/_sql` folder of website repo
+**Upstream Software Workflow - Untracked File Stores**   | rsync file stores from **Test**                             |                                                                                                  | rsync file stores from **Test**                                | rsync file stores from **Test**
+**Upstream Software Workflow - Tracked File Stores**     | Pull file stores from **develop**                           | Auto-commit file stores (up to 750MB each) to **develop** of website repo                        | Pull file stores from **release**                              | Pull file stores from **master**
 
 ## Catapult Configuration ##
 
@@ -645,17 +677,17 @@ The following options are available:
             * `dev.example.com.mycompany.com`, `test.example.com.mycompany.com`, `qc.example.com.mycompany.com`, `example.com.mycompany.com`
         * PLEASE NOTE: When removing this option from a website with `software:`, you need to manually replace URLs in the database respective to the `software_workflow:` option.
             * ie `vagrant ssh mycompany.com-test-redhat-mysql`
-            * `php /catapult/provisioners/redhat/installers/wp-cli.phar --allow-root --path="/var/www/repositories/apache/example.com/(webroot if applicable)" search-replace ":\/\/(www\.)?(dev\.|test\.)?(example\.com\.mycompany\.com)" "://example.com" --regex`
+            * `wp-cli --allow-root --path="/var/www/repositories/apache/example.com/(webroot if applicable)" search-replace ":\/\/(www\.)?(dev\.|test\.)?(example\.com\.mycompany\.com)" "://example.com" --regex`
 * `force_auth:`
     * required: no
     * example: `force_auth: letmein`
-        * forces [HTTP basic authentication](https://en.wikipedia.org/wiki/Basic_access_authentication) in Test, QC, and Production (see `force_auth_exclude`)
+        * forces [HTTP basic authentication](https://en.wikipedia.org/wiki/Basic_access_authentication) in LocalDev, Test, QC, and Production (see `force_auth_exclude`)
         * `letmein` is both the username and password
 * `force_auth_exclude:`
     * required: no
     * dependency: `force_auth:`
     * example: `force_auth_exclude: ["production"]`
-        * array of select environments ["test","qc","production"] to exclude from the `force_auth` option
+        * array of select environments ["dev","test","qc","production"] to exclude from the `force_auth` option
 * `force_https:`
     * required: no
     * option: `force_https: true`
@@ -828,9 +860,9 @@ Oracle SQL Developer is the recommended tool, to connect to and work with, datab
         * Then add a New Connection with the respective environment's mysql user values in `~/secrets/configuration.yml`.
             * The hostname will be localhost since we are forwarding the port through our local SSH tunnel.
 
-### Hotfixes ###
+### Production Hotfixes ###
 
-Always weigh the risk of *not performing* a hotfix versus *performing* it, as hotfixes require going outside of the normal development and testing workflow. Performing a hotfix varies depending on the website's `software` type, `software_workflow` direction, and type of change (code or database).
+Always weigh the risk of *not performing* a production hotfix versus *performing* it, as production hotfixes require going outside of the normal development and testing workflow. Performing a production hotfix varies depending on the website's `software` type, `software_workflow` direction, and type of change (code or database).
 
 * `software_workflow: downstream`
     * **Code**
@@ -843,7 +875,7 @@ Always weigh the risk of *not performing* a hotfix versus *performing* it, as ho
         7. Provision any related LocalDev servers
     * **Database**
         * Login to the Production website and make the change
-            * (any database change that is beyond the direct capability of the `software` should not be taken out as a hotfix)
+            * (any database change that is beyond the direct capability of the `software` should not be taken out as a production hotfix)
 * `software_workflow: upstream`
     * **Code**
         1. In `~/configuration.yml`, temporarily set the environments -> dev -> branch key to `branch: master`, and do not commit the change
@@ -855,7 +887,7 @@ Always weigh the risk of *not performing* a hotfix versus *performing* it, as ho
         7. Provision any related LocalDev servers
     * **Database**
         1. Login to the Production *and* Test website and make the change
-            * (any database change that is beyond the direct capability of logging into the `software` and safely making the change, should not be taken out as a hotfix)
+            * (any database change that is beyond the direct capability of logging into the `software` and safely making the change, should not be taken out as a production hotfix)
         2. From LocalDev and the `develop` branch of the website's repository, commit a deletion of today's (if exists) SQL dump file from within the `~/sql` folder
             * (this ensures there is a known committed SQL dump of your change to the `develop` branch for when this branch is merged upstream)
         3. From LocalDev, temporarily checkout the `master` branch of the website's repository, make your change in the most recent SQL dump file from within the `~/sql` folder
@@ -891,9 +923,9 @@ Pageviews | Avg. Session Duration | Total Session Seconds | Concurrency Maxiumum
 1,000 | 1 minute (60 seconds) | 60,000 | **16**
 
 *100 concurrent requests performed 10 times*
-````
+```
 ab -l -r -n 1000 -c 100 -H "Accept-Encoding: gzip, deflate" http://test.drupal7.devopsgroup.io/
-````
+```
 
 **14,600 pageviews per month**
 
@@ -907,15 +939,15 @@ Pageviews | Avg. Session Duration | Total Session Seconds | Concurrency Maxiumum
 100 | 1 minute (60 seconds) | 6,000 | **1.6**
 
 *10 concurrent requests performed 10 times*
-````
+```
 ab -l -r -n 100 -c 10 -H "Accept-Encoding: gzip, deflate" http://test.drupal7.devopsgroup.io/
-````
+```
 
 ### Interpreting Apache AB Results ###
 
 Using a satisifed [Apdex](https://en.wikipedia.org/wiki/Apdex) of 7 seconds, we can see that 98% of users would be satisfied.
 
-````
+```
 Percentage of the requests served within a certain time (ms)
   50%     19
   66%     21
@@ -926,7 +958,27 @@ Percentage of the requests served within a certain time (ms)
   98%   6127
   99%   7227
  100%   7325 (longest request)
-````
+```
+
+
+
+## Maintenance Cycle ##
+
+A maintenance cycle is scheduled for defined times within the timezone that is defined within `~/secrets/configuration.yml` at the `timezone_redhat` and `timezone_windows` value of the [Company](#company) entry. This ensures servers within your infrastructure are automatically patched to mitigate security vulnerabilites.
+
+### Daily ###
+
+During daily maintenance, system updates are downloaded and installed, logs are rotated, and database maintenance performed.
+
+* Red Hat - 3:05AM
+* Windows - 2:00AM
+
+### Weekly ###
+
+During weekly maintenance, if necessary, servers will be rebooted dependant upon kernel updates for Red Hat and the Windows Updates pending restart status for Windows. Server reboots are generally fast for Red Hat at 5-10 seconds and 1-2 minutes for Windows.
+
+* Red Hat - Sunday 3:25AM
+* Windows - Sunday 3:00AM
 
 
 

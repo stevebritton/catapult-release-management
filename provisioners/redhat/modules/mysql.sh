@@ -22,6 +22,7 @@ fi
 
 # disable remote root login
 mysql --defaults-extra-file=$dbconf -e "DELETE FROM mysql.user WHERE user='root' AND host NOT IN ('localhost', '127.0.0.1', '::1')"
+
 # remove anonymous user
 mysql --defaults-extra-file=$dbconf -e "DELETE FROM mysql.user WHERE user=''"
 
@@ -33,13 +34,13 @@ mysql --defaults-extra-file=$dbconf -e "SET global max_allowed_packet=1024 * 102
 
 # create an array of domainvaliddbnames
 while IFS='' read -r -d '' key; do
-    domainvaliddbname=$(echo "$key" | grep -w "domain" | cut -d ":" -f 2 | tr -d " " | tr "." "_")
+    domainvaliddbname=$(echo "$key" | grep -w "domain" | cut -d ":" -f 2 | tr -d " " | tr "." "_" | tr "-" "_")
     domainvaliddbnames+=(${1}_${domainvaliddbname})
 done < <(echo "${configuration}" | shyaml get-values-0 websites.apache)
 # cleanup databases from domainvaliddbnames array
 for database in $(mysql --defaults-extra-file=$dbconf -e "show databases" | egrep -v "Database|mysql|information_schema|performance_schema"); do
     if ! [[ ${domainvaliddbnames[*]} =~ $database ]]; then
-        echo "Cleaning up websites that no longer exist..."
+        echo "Removing the ${database} database as it does not exist in your configuration..."
         mysql --defaults-extra-file=$dbconf -e "DROP DATABASE $database";
     fi
 done
@@ -59,7 +60,7 @@ mysql --defaults-extra-file=$dbconf -e "CREATE USER 'maintenance'@'%'"
 echo "${configuration}" | shyaml get-values-0 websites.apache |
 while IFS='' read -r -d '' key; do
 
-    domainvaliddbname=$(echo "$key" | grep -w "domain" | cut -d ":" -f 2 | tr -d " " | tr "." "_")
+    domainvaliddbname=$(echo "$key" | grep -w "domain" | cut -d ":" -f 2 | tr -d " " | tr "." "_" | tr "-" "_")
     software=$(echo "$key" | grep -w "software" | cut -d ":" -f 2 | tr -d " ")
 
     if test -n "${software}"; then
@@ -74,24 +75,17 @@ done
 # flush privileges
 mysql --defaults-extra-file=$dbconf -e "FLUSH PRIVILEGES"
 
-# configure a cron task for database maintenance
-touch /etc/cron.daily/catapult-mysql.cron
-cat > "/etc/cron.daily/catapult-mysql.cron" << EOF
-#!/bin/bash
-mysqlcheck -u maintenance --all-databases --auto-repair --optimize
-EOF
-
 echo "${configuration}" | shyaml get-values-0 websites.apache |
 while IFS='' read -r -d '' key; do
 
     domain=$(echo "$key" | grep -w "domain" | cut -d ":" -f 2 | tr -d " ")
     domain_tld_override=$(echo "$key" | grep -w "domain_tld_override" | cut -d ":" -f 2 | tr -d " ")
-    domainvaliddbname=$(echo "$key" | grep -w "domain" | cut -d ":" -f 2 | tr -d " " | tr "." "_")
+    domainvaliddbname=$(echo "$key" | grep -w "domain" | cut -d ":" -f 2 | tr -d " " | tr "." "_" | tr "-" "_")
     software=$(echo "$key" | grep -w "software" | cut -d ":" -f 2 | tr -d " ")
     software_dbprefix=$(echo "$key" | grep -w "software_dbprefix" | cut -d ":" -f 2 | tr -d " ")
     software_workflow=$(echo "$key" | grep -w "software_workflow" | cut -d ":" -f 2 | tr -d " ")
     software_db=$(mysql --defaults-extra-file=$dbconf --silent --skip-column-names --execute "SELECT SCHEMA_NAME FROM INFORMATION_SCHEMA.SCHEMATA WHERE SCHEMA_NAME = '${1}_${domainvaliddbname}'")
-    software_db_tables=$(mysql --defaults-extra-file=$dbconf --silent --skip-column-names --execute "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = '${1}_${domainvaliddbname}'")    
+    software_db_tables=$(mysql --defaults-extra-file=$dbconf --silent --skip-column-names --execute "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = '${1}_${domainvaliddbname}'")
     softwareroot=$(provisioners software.apache.${software}.softwareroot)
     webroot=$(echo "$key" | grep -w "webroot" | cut -d ":" -f 2 | tr -d " ")
 
@@ -110,7 +104,7 @@ while IFS='' read -r -d '' key; do
             # @todo this is intended so that a developer can commit a dump from active work in localdev then the process detect this and kick off the restore rather than dump workflow
             if ! [ -f /var/www/repositories/apache/${domain}/_sql/$(date +"%Y%m%d").sql ]; then
                 # create the _sql directory if it does not exist
-                mkdir -p "/var/www/repositories/apache/${domain}/_sql"
+                mkdir --parents "/var/www/repositories/apache/${domain}/_sql"
                 # dump the database
                 mysqldump --defaults-extra-file=$dbconf --single-transaction --quick ${1}_${domainvaliddbname} > /var/www/repositories/apache/${domain}/_sql/$(date +"%Y%m%d").sql
                 # ensure no more than 500mb or at least the one, newest, .sql file exists
@@ -304,8 +298,8 @@ while IFS='' read -r -d '' key; do
             echo -e "\t* resetting ${software} admin password..."
             mysql --defaults-extra-file=$dbconf ${1}_${domainvaliddbname} -e "
                 INSERT INTO ${software_dbprefix}user (user_id, user_name, user_email)
-                VALUES ('1', 'admin', '$(catapult company.email)')
-                ON DUPLICATE KEY UPDATE user_name='admin', user_email='$(catapult company.email)';
+                VALUES ('1', 'Admin', '$(catapult company.email)')
+                ON DUPLICATE KEY UPDATE user_name='Admin', user_email='$(catapult company.email)';
             "
             cd "/var/www/repositories/apache/${domain}/${webroot}" && php maintenance/changePassword.php --userid="1" --password="$(catapult environments.${1}.software.admin_password)"
             mysql --defaults-extra-file=$dbconf ${1}_${domainvaliddbname} -e "
@@ -353,7 +347,7 @@ while IFS='' read -r -d '' key; do
             "
             wp-cli --allow-root --path="/var/www/repositories/apache/${domain}/${webroot}" user add-role 1 administrator
 
-        fi  
+        fi
     fi
 
 done
