@@ -81,8 +81,8 @@ if [[ ! ${swaps[*]} =~ "/swapfile" ]]; then
     sudo dd if=/dev/zero of=/swapfile count=256 bs=1MiB
     sudo chmod 0600 /swapfile
     sudo mkswap /swapfile
-    sudo swapon /swapfile
 fi
+sudo swapon /swapfile
 # add the swap /swapfile to startup if it does not exist
 if [[ ! ${swap_volumes[*]} =~ "/swapfile" ]]; then
     sudo bash -c 'echo -e "\n/swapfile swap    swap    defaults    0   0" >> /etc/fstab'
@@ -94,23 +94,25 @@ if [[ ! ${swaps[*]} =~ "/swapfile512" ]]; then
     sudo dd if=/dev/zero of=/swapfile512 count=512 bs=1MiB
     sudo chmod 0600 /swapfile512
     sudo mkswap /swapfile512
-    sudo swapon /swapfile512
 fi
+sudo swapon /swapfile512
 # add the swap /swapfile512 to startup if it does not exist
 if [[ ! ${swap_volumes[*]} =~ "/swapfile512" ]]; then
     sudo bash -c 'echo -e "\n/swapfile512 swap    swap    defaults    0   0" >> /etc/fstab'
 fi
 
+# define the swaps
+defined_swaps=("/swapfile" "/swapfile512")
 # remove all swaps except /swapfile and /swapfile512
 while read -r swap; do
-    if ([ "${swap}" != "/swapfile" ] || [ "${swap}" != "/swapfile512" ]); then
+    if [[ ! ${defined_swaps[*]} =~ "${swap}" ]]; then
         echo -e "only the /swapfile should exist, removing ${swap}..."
         sudo swapoff "${swap}"
     fi
 done <<< "${swaps}"
 # remove all swap volumes from startup except /swapfile and /swapfile512
 while read -r swap_volume; do
-    if ([ "${swap_volume}" != "/swapfile" ] || [ "${swap_volume}" != "/swapfile512" ]); then
+    if [[ ! ${defined_swaps[*]} =~ "${swap_volume}" ]]; then
         echo -e "only the /swapfile should exist, removing ${swap_volume}..."
         # escape slashes for sed
         swap_volume=$(echo -e "${swap_volume}" | sed 's#\/#\\\/#g')
