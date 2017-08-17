@@ -12,6 +12,7 @@ company_email="$(echo "${configuration}" | shyaml get-value company.email)"
 echo "${configuration}" | shyaml get-values-0 websites.apache |
 while IFS='' read -r -d '' key; do
 
+    # define variables
     domain=$(echo "$key" | grep -w "domain" | cut -d ":" -f 2 | tr -d " ")
     domain_environment=$(echo "$key" | grep -w "domain" | cut -d ":" -f 2 | tr -d " ")
     if [ "$1" != "production" ]; then
@@ -23,7 +24,11 @@ while IFS='' read -r -d '' key; do
     else
         domain_root="${domain}"
     fi
-    domainvaliddbname=$(echo "$key" | grep -w "domain" | cut -d ":" -f 2 | tr -d " " | tr "." "_")
+    domainvaliddbname=$(echo "$key" | grep -w "domain" | cut -d ":" -f 2 | tr -d " " | tr "." "_" | tr "-" "_")
+    domainvalidcertname=$(echo "$key" | grep -w "domain" | cut -d ":" -f 2 | tr -d " " | tr "." "_")
+    if [ "$1" != "production" ]; then
+        domainvalidcertname="${1}_${domainvalidcertname}"
+    fi
     force_auth=$(echo "$key" | grep -w "force_auth" | cut -d ":" -f 2 | tr -d " ")
     force_auth_exclude=$(echo "$key" | grep -w "force_auth_exclude" | tr -d " ")
     force_https=$(echo "$key" | grep -w "force_https" | cut -d ":" -f 2 | tr -d " ")
@@ -32,12 +37,23 @@ while IFS='' read -r -d '' key; do
     software_workflow=$(echo "$key" | grep -w "software_workflow" | cut -d ":" -f 2 | tr -d " ")
     webroot=$(echo "$key" | grep -w "webroot" | cut -d ":" -f 2 | tr -d " ")
 
-    # configure vhost
-    if [ "$1" = "production" ]; then
-        echo -e "\t * configuring vhost for ${domain_root}"
-    else
-        echo -e "\t * configuring vhost for ${1}.${domain_root}"
+    # generate letsencrypt certificates for upstream
+    if ([ "$1" != "dev" ]); then
+        if [ -z "${domain_tld_override}" ]; then
+            bash /catapult/provisioners/redhat/installers/dehydrated/dehydrated --cron --domain "${domain_environment}" --domain "www.${domain_environment}" 2>&1
+            sudo cat >> /catapult/provisioners/redhat/installers/dehydrated/domains.txt << EOF
+${domain_environment} www.${domain_environment}
+EOF
+        else
+            bash /catapult/provisioners/redhat/installers/dehydrated/dehydrated --cron --domain "${domain_environment}.${domain_tld_override}" --domain "www.${domain_environment}.${domain_tld_override}" 2>&1
+            sudo cat >> /catapult/provisioners/redhat/installers/dehydrated/domains.txt << EOF
+${domain_environment}.${domain_tld_override} www.${domain_environment}.${domain_tld_override}
+EOF
+        fi
     fi
+
+    # configure vhost
+    echo -e "Configuring vhost for ${domain_environment}"
     sudo mkdir --parents /var/log/httpd/${domain_environment}
     sudo touch /var/log/httpd/${domain_environment}/access_log
     sudo touch /var/log/httpd/${domain_environment}/error_log
@@ -49,13 +65,13 @@ while IFS='' read -r -d '' key; do
         ServerAlias www.${domain_environment}.${domain_tld_override}"
     fi
     # handle the force_auth option
-    if ([ ! -z "${force_auth}" ]) && ([ "$1" = "test" ] || [ "$1" = "qc" ] || [ "$1" = "production" ]); then
+    if ([ ! -z "${force_auth}" ]); then
         if ([ ! -z "${force_auth_exclude}" ]); then
             force_auth_excludes=( $(echo "${key}" | shyaml get-values force_auth_exclude) )
             if ([[ "${force_auth_excludes[@]}" =~ "$1" ]]); then
                 force_auth_value=""
             else
-                sudo htpasswd -b -c /etc/httpd/sites-enabled/${domain_environment}.htpasswd ${force_auth} ${force_auth} 2>&1 | sed "s/^/\t\t/"
+                sudo htpasswd -b -c /etc/httpd/sites-enabled/${domain_environment}.htpasswd ${force_auth} ${force_auth} 2>&1
                 force_auth_value="
                     <Location />
                         # Force HTTP authentication
@@ -67,7 +83,7 @@ while IFS='' read -r -d '' key; do
                 "
             fi
         else
-            sudo htpasswd -b -c /etc/httpd/sites-enabled/${domain_environment}.htpasswd ${force_auth} ${force_auth} 2>&1 | sed "s/^/\t\t/"
+            sudo htpasswd -b -c /etc/httpd/sites-enabled/${domain_environment}.htpasswd ${force_auth} ${force_auth} 2>&1
             force_auth_value="
                 <Location />
                     # Force HTTP authentication
@@ -82,6 +98,38 @@ while IFS='' read -r -d '' key; do
         # never force_auth in dev
         force_auth_value=""
     fi
+    # handle ssl certificates
+    # if there is a specified custom certificate available
+    if ([ -f "/var/www/repositories/apache/${domain}/_cert/${domainvalidcertname}/${domainvalidcertname}.ca-bundle" ] \
+     && [ -f "/var/www/repositories/apache/${domain}/_cert/${domainvalidcertname}/${domainvalidcertname}.crt" ] \
+     && [ -f "/var/www/repositories/apache/${domain}/_cert/${domainvalidcertname}/server.csr" ] \
+     && [ -f "/var/www/repositories/apache/${domain}/_cert/${domainvalidcertname}/server.key" ]); then
+        ssl_certificates="
+        SSLCertificateFile /var/www/repositories/apache/${domain}/_cert/${domainvalidcertname}/${domainvalidcertname}.crt
+        SSLCertificateKeyFile /var/www/repositories/apache/${domain}/_cert/${domainvalidcertname}/server.key
+        SSLCertificateChainFile /var/www/repositories/apache/${domain}/_cert/${domainvalidcertname}/${domainvalidcertname}.ca-bundle
+        "
+    # upstream without domain_tld_override and a letsencrypt cert available
+    elif ([ "$1" != "dev" ]) && ([ -z "${domain_tld_override}" ]) && ([ -f /catapult/provisioners/redhat/installers/dehydrated/certs/${domain_environment}/cert.pem ]); then
+        ssl_certificates="
+        SSLCertificateFile /catapult/provisioners/redhat/installers/dehydrated/certs/${domain_environment}/cert.pem
+        SSLCertificateKeyFile /catapult/provisioners/redhat/installers/dehydrated/certs/${domain_environment}/privkey.pem
+        SSLCertificateChainFile /catapult/provisioners/redhat/installers/dehydrated/certs/${domain_environment}/chain.pem
+        "
+    # upstream with domain_tld_override and a letsencrypt cert available
+    elif ([ "$1" != "dev" ]) && ([ ! -z "${domain_tld_override}" ]) && ([ -f /catapult/provisioners/redhat/installers/dehydrated/certs/${domain_environment}.${domain_tld_override}/cert.pem ]); then
+        ssl_certificates="
+        SSLCertificateFile /catapult/provisioners/redhat/installers/dehydrated/certs/${domain_environment}.${domain_tld_override}/cert.pem
+        SSLCertificateKeyFile /catapult/provisioners/redhat/installers/dehydrated/certs/${domain_environment}.${domain_tld_override}/privkey.pem
+        SSLCertificateChainFile /catapult/provisioners/redhat/installers/dehydrated/certs/${domain_environment}.${domain_tld_override}/chain.pem
+        "
+    # self-signed in localdev or if we do not have a letsencrypt cert
+    else
+        ssl_certificates="
+        SSLCertificateFile /etc/ssl/certs/httpd-dummy-cert.key.cert
+        SSLCertificateKeyFile /etc/ssl/certs/httpd-dummy-cert.key.cert
+        "
+    fi
     # handle the force_https option
     if [ "${force_https}" = true ]; then
         force_https_value="
@@ -89,7 +137,7 @@ while IFS='' read -r -d '' key; do
         # !https rather than =http to match when X-Forwarded-Proto is not set
         RewriteEngine On
         RewriteCond %{HTTP:X-Forwarded-Proto} !https
-        RewriteRule ^(.*)$ https://${domain_environment}\$1  [R=301,L]
+        RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [R=301,L]
         "
         force_https_hsts="Header always set Strict-Transport-Security \"max-age=15768000\""
     else
@@ -110,25 +158,21 @@ while IFS='' read -r -d '' key; do
         ErrorLog /var/log/httpd/${domain_environment}/error_log
         CustomLog /var/log/httpd/${domain_environment}/access_log combined
         LogLevel warn
-        $force_auth_value
-        $force_https_value
-    </VirtualHost> 
+        ${force_auth_value}
+        ${force_https_value}
+    </VirtualHost>
 
     <IfModule mod_ssl.c>
         <VirtualHost *:443> # must listen * to support cloudflare
             ServerAdmin ${company_email}
             ServerName ${domain_environment}
             ServerAlias www.${domain_environment}
+            $domain_tld_override_alias_additions
             DocumentRoot /var/www/repositories/apache/${domain}/${webroot}
             ErrorLog /var/log/httpd/${domain_environment}/error_log
             CustomLog /var/log/httpd/${domain_environment}/access_log combined
             LogLevel warn
             SSLEngine on
-
-            # allow only secure protocols for client to connect
-            # SSLv2: FUBAR
-            # SSLv3: POODLE
-            SSLProtocol all -SSLv2 -SSLv3
 
             # SSLCompression: CRIME
             SSLCompression off
@@ -140,33 +184,153 @@ while IFS='' read -r -d '' key; do
 
             # allow only secure ciphers that client can negotiate
             # https://wiki.mozilla.org/Security/Server_Side_TLS
-            # Firefox 1, Chrome 1, IE 7, Opera 5, Safari 1
-            SSLHonorCipherOrder On
-            SSLCipherSuite ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-AES256-GCM-SHA384:DHE-RSA-AES128-GCM-SHA256:DHE-DSS-AES128-GCM-SHA256:kEDH+AESGCM:ECDHE-RSA-AES128-SHA256:ECDHE-ECDSA-AES128-SHA256:ECDHE-RSA-AES128-SHA:ECDHE-ECDSA-AES128-SHA:ECDHE-RSA-AES256-SHA384:ECDHE-ECDSA-AES256-SHA384:ECDHE-RSA-AES256-SHA:ECDHE-ECDSA-AES256-SHA:DHE-RSA-AES128-SHA256:DHE-RSA-AES128-SHA:DHE-DSS-AES128-SHA256:DHE-RSA-AES256-SHA256:DHE-DSS-AES256-SHA:DHE-RSA-AES256-SHA:ECDHE-RSA-DES-CBC3-SHA:ECDHE-ECDSA-DES-CBC3-SHA:AES128-GCM-SHA256:AES256-GCM-SHA384:AES128-SHA256:AES256-SHA256:AES128-SHA:AES256-SHA:AES:DES-CBC3-SHA:HIGH:!aNULL:!eNULL:!EXPORT:!DES:!RC4:!MD5:!PSK:!aECDH:!EDH-DSS-DES-CBC3-SHA:!EDH-RSA-DES-CBC3-SHA:!KRB5-DES-CBC3-SHA
-            
+            # https://mozilla.github.io/server-side-tls/ssl-config-generator/
+            # Firefox 1, Chrome 1, IE 7, Opera 5, Safari 1, Windows XP IE8, Android 2.3, Java 7
+            SSLHonorCipherOrder on
+            SSLCipherSuite ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:DHE-RSA-AES128-GCM-SHA256:DHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-AES128-SHA256:ECDHE-RSA-AES128-SHA256:ECDHE-ECDSA-AES128-SHA:ECDHE-RSA-AES256-SHA384:ECDHE-RSA-AES128-SHA:ECDHE-ECDSA-AES256-SHA384:ECDHE-ECDSA-AES256-SHA:ECDHE-RSA-AES256-SHA:DHE-RSA-AES128-SHA256:DHE-RSA-AES128-SHA:DHE-RSA-AES256-SHA256:DHE-RSA-AES256-SHA:ECDHE-ECDSA-DES-CBC3-SHA:ECDHE-RSA-DES-CBC3-SHA:EDH-RSA-DES-CBC3-SHA:AES128-GCM-SHA256:AES256-GCM-SHA384:AES128-SHA256:AES256-SHA256:AES128-SHA:AES256-SHA:DES-CBC3-SHA:!DSS
+
             # disable the SSL_ environment variable (usually CGI and SSI requests only)
             SSLOptions -StdEnvVars
-            
+
             # help old browsers
             BrowserMatch "MSIE [2-5]" nokeepalive ssl-unclean-shutdown downgrade-1.0 force-response-1.0
-            
-            # set the server certificate
-            SSLCertificateFile /etc/ssl/certs/httpd-dummy-cert.key.cert
-            SSLCertificateKeyFile /etc/ssl/certs/httpd-dummy-cert.key.cert
-            
+
+            # set the ssl certificates
+            ${ssl_certificates}
+
+            # force httpd basic auth if configured
             ${force_auth_value}
-            
+
         </VirtualHost>
     </IfModule>
 
-    # allow .htaccess in apache 2.4+
+    # define apache ruleset for the web root
     <Directory "/var/www/repositories/apache/${domain}/${webroot}">
+
+        # allow .htaccess in apache 2.4+
         AllowOverride All
         Options -Indexes +FollowSymlinks
+
         # define new relic appname
         <IfModule php5_module>
             php_value newrelic.appname "${domain_environment};$(catapult company.name | tr '[:upper:]' '[:lower:]')-${1}-redhat"
         </IfModule>
+
+        # compressed certain content types before being sent to the client over the network
+        # https://github.com/h5bp/server-configs-apache
+        # https://httpd.apache.org/docs/current/mod/mod_filter.html#addoutputfilterbytype
+        <IfModule mod_deflate.c>
+            <IfModule mod_filter.c>
+                AddOutputFilterByType DEFLATE "application/atom+xml"
+                AddOutputFilterByType DEFLATE "application/javascript"
+                AddOutputFilterByType DEFLATE "application/json"
+                AddOutputFilterByType DEFLATE "application/ld+json"
+                AddOutputFilterByType DEFLATE "application/manifest+json"
+                AddOutputFilterByType DEFLATE "application/rdf+xml"
+                AddOutputFilterByType DEFLATE "application/rss+xml"
+                AddOutputFilterByType DEFLATE "application/schema+json"
+                AddOutputFilterByType DEFLATE "application/vnd.geo+json"
+                AddOutputFilterByType DEFLATE "application/vnd.ms-fontobject"
+                AddOutputFilterByType DEFLATE "application/x-font-ttf"
+                AddOutputFilterByType DEFLATE "application/x-javascript"
+                AddOutputFilterByType DEFLATE "application/x-web-app-manifest+json"
+                AddOutputFilterByType DEFLATE "application/xhtml+xml"
+                AddOutputFilterByType DEFLATE "application/xml"
+                AddOutputFilterByType DEFLATE "font/eot"
+                AddOutputFilterByType DEFLATE "font/opentype"
+                AddOutputFilterByType DEFLATE "image/bmp"
+                AddOutputFilterByType DEFLATE "image/svg+xml"
+                AddOutputFilterByType DEFLATE "image/vnd.microsoft.icon"
+                AddOutputFilterByType DEFLATE "image/x-icon"
+                AddOutputFilterByType DEFLATE "text/cache-manifest"
+                AddOutputFilterByType DEFLATE "text/css"
+                AddOutputFilterByType DEFLATE "text/html"
+                AddOutputFilterByType DEFLATE "text/javascript"
+                AddOutputFilterByType DEFLATE "text/plain"
+                AddOutputFilterByType DEFLATE "text/vcard"
+                AddOutputFilterByType DEFLATE "text/vnd.rim.location.xloc"
+                AddOutputFilterByType DEFLATE "text/vtt"
+                AddOutputFilterByType DEFLATE "text/x-component"
+                AddOutputFilterByType DEFLATE "text/x-cross-domain-policy"
+                AddOutputFilterByType DEFLATE "text/xml"
+            </IfModule>
+        </IfModule>
+
+        # allow ETags as there is only one data store (Apache does a file stat so serving the same file from multiple servers would invalidate ETags)
+        # https://github.com/expressjs/express/issues/2445
+        # https://gist.github.com/6a68/4971859
+        # https://github.com/h5bp/server-configs-apache
+        # https://tools.ietf.org/html/rfc7232#section-2.3
+        # https://httpd.apache.org/docs/2.4/mod/core.html#fileetag
+        FileETag MTime Size
+
+        # serve resources with far-future expires headers
+        # (!) if you don't control versioning with filename-based cache busting, you should consider lowering the cache times to something like one week
+        # (!) cloudflare uses 4 hours as a default cache expiration
+        # https://support.cloudflare.com/hc/en-us/articles/200172516-Which-file-extensions-does-Cloudflare-cache-for-static-content-
+        # https://support.cloudflare.com/hc/en-us/article_attachments/212266867/cachable.txt
+        # (!) cloudflare automatically respects longer cache expiration specified by the server
+        # https://support.cloudflare.com/hc/en-us/articles/200168276
+        # (!) google pagespeed insights requires the cache level to be set to at least 7 days to pass the test
+        # https://github.com/h5bp/server-configs-apache
+        # https://httpd.apache.org/docs/current/mod/mod_expires.html
+        <IfModule mod_expires.c>
+            ExpiresActive on
+            ExpiresDefault                                      "access plus 1 week"
+          # CSS
+            ExpiresByType text/css                              "access plus 1 week"
+          # Data interchange
+            ExpiresByType application/atom+xml                  "access plus 1 hour"
+            ExpiresByType application/rdf+xml                   "access plus 1 hour"
+            ExpiresByType application/rss+xml                   "access plus 1 hour"
+            ExpiresByType application/json                      "access plus 0 seconds"
+            ExpiresByType application/ld+json                   "access plus 0 seconds"
+            ExpiresByType application/schema+json               "access plus 0 seconds"
+            ExpiresByType application/vnd.geo+json              "access plus 0 seconds"
+            ExpiresByType application/xml                       "access plus 0 seconds"
+            ExpiresByType text/xml                              "access plus 0 seconds"
+          # Favicon (cannot be renamed!) and cursor images
+            ExpiresByType image/vnd.microsoft.icon              "access plus 1 week"
+            ExpiresByType image/x-icon                          "access plus 1 week"
+          # HTML
+            ExpiresByType text/html                             "access plus 1 week"
+          # JavaScript
+            ExpiresByType application/javascript                "access plus 1 week"
+            ExpiresByType application/x-javascript              "access plus 1 week"
+            ExpiresByType text/javascript                       "access plus 1 week"
+          # Manifest files
+            ExpiresByType application/manifest+json             "access plus 1 week"
+            ExpiresByType application/x-web-app-manifest+json   "access plus 0 seconds"
+            ExpiresByType text/cache-manifest                   "access plus 0 seconds"
+          # Media files
+            ExpiresByType audio/ogg                             "access plus 1 week"
+            ExpiresByType image/bmp                             "access plus 1 week"
+            ExpiresByType image/gif                             "access plus 1 week"
+            ExpiresByType image/jpeg                            "access plus 1 week"
+            ExpiresByType image/png                             "access plus 1 week"
+            ExpiresByType image/svg+xml                         "access plus 1 week"
+            ExpiresByType image/webp                            "access plus 1 week"
+            ExpiresByType video/mp4                             "access plus 1 week"
+            ExpiresByType video/ogg                             "access plus 1 week"
+            ExpiresByType video/webm                            "access plus 1 week"
+          # Web fonts
+            # Embedded OpenType (EOT)
+            ExpiresByType application/vnd.ms-fontobject         "access plus 1 month"
+            ExpiresByType font/eot                              "access plus 1 month"
+            # OpenType
+            ExpiresByType font/opentype                         "access plus 1 month"
+            # TrueType
+            ExpiresByType application/x-font-ttf                "access plus 1 month"
+            # Web Open Font Format (WOFF) 1.0
+            ExpiresByType application/font-woff                 "access plus 1 month"
+            ExpiresByType application/x-font-woff               "access plus 1 month"
+            ExpiresByType font/woff                             "access plus 1 month"
+            # Web Open Font Format (WOFF) 2.0
+            ExpiresByType application/font-woff2                "access plus 1 month"
+          # Other
+            ExpiresByType text/x-cross-domain-policy            "access plus 1 week"
+        </IfModule>
+
     </Directory>
 
     # deny access to _sql folders
@@ -183,6 +347,7 @@ EOF
     fi
 
 done
+
 # reload apache
 sudo systemctl reload httpd.service
 sudo systemctl status httpd.service

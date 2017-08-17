@@ -38,10 +38,12 @@ if [ -d "/var/www/repositories/apache/${domain}/.git" ]; then
             && git config --global user.name "Catapult" \
             && git config --global user.email "$(catapult company.email)" \
             && git config core.autocrlf false \
+            && git config core.fileMode false \
             && git config core.packedGitLimit 128m \
             && git config core.packedGitWindowSize 128m \
             && git config pack.deltaCacheSize 128m \
             && git config pack.packSizeLimit 128m \
+            && git config pack.threads 1 \
             && git config pack.windowMemory 128m
         # get the current branch
         branch_this=$(cd "/var/www/repositories/apache/${domain}" && git rev-parse --abbrev-ref HEAD)
@@ -95,7 +97,15 @@ if [ -d "/var/www/repositories/apache/${domain}/.git" ]; then
             cd "/var/www/repositories/apache/${domain}" \
                 && git commit --message="Catapult auto-commit ${1}:${software_workflow}:software_files"
             cd "/var/www/repositories/apache/${domain}" \
-                && sudo ssh-agent bash -c "ssh-add /catapult/secrets/id_rsa; git fetch" \
+                && sudo ssh-agent bash -c "ssh-add /catapult/secrets/id_rsa; git fetch"
+            # if there are changes between us and remote, write a changes file for later use
+            cd "/var/www/repositories/apache/${domain}" \
+                && sudo git diff --exit-code --quiet ${branch} origin/${branch}
+            if [ $? -eq 1 ]; then
+                touch "/catapult/provisioners/redhat/logs/domain.${domain}.changes"
+            fi
+            # after we have a diff, continute to pull
+            cd "/var/www/repositories/apache/${domain}" \
                 && sudo ssh-agent bash -c "ssh-add /catapult/secrets/id_rsa; git pull origin ${branch}" \
                 && sudo ssh-agent bash -c "ssh-add /catapult/secrets/id_rsa; git submodule update --init --recursive" \
                 && sudo ssh-agent bash -c "ssh-add /catapult/secrets/id_rsa; git push origin ${branch}"
@@ -106,18 +116,27 @@ if [ -d "/var/www/repositories/apache/${domain}/.git" ]; then
                 cd "/var/www/repositories/apache/${domain}" \
                     && git stash save --include-untracked
             fi
-            # hard reset (tracked), checkout all from HEAD, clean (untracked), checkout correct branch, then pull in latest
+            # hard reset (tracked), checkout all from HEAD, clean (untracked - we'll rsync later), checkout correct branch, then pull in latest
             cd "/var/www/repositories/apache/${domain}" \
                 && git reset --quiet --hard HEAD -- \
                 && git checkout . \
                 && git clean -d --force --force \
                 && git checkout ${branch} \
-                && sudo ssh-agent bash -c "ssh-add /catapult/secrets/id_rsa; git fetch" \
+                && sudo ssh-agent bash -c "ssh-add /catapult/secrets/id_rsa; git fetch"
+            # if there are changes between us and remote, write a changes file for later use
+            cd "/var/www/repositories/apache/${domain}" \
+                && sudo git diff --exit-code --quiet ${branch} origin/${branch}
+            if [ $? -eq 1 ]; then
+                touch "/catapult/provisioners/redhat/logs/domain.${domain}.changes"
+            fi
+            # after we have a diff, continue to pull
+            cd "/var/www/repositories/apache/${domain}" \
                 && sudo ssh-agent bash -c "ssh-add /catapult/secrets/id_rsa; git pull origin ${branch}" \
                 && sudo ssh-agent bash -c "ssh-add /catapult/secrets/id_rsa; git submodule update --init --recursive"
         fi
-        # if we're on develop and software workflow is set to downstream, pull master into develop to keep it up to date
-        if ([ "${branch_this}" = "develop" ] && [ "${software_workflow}" = "downstream" ]); then
+        # if we're on develop, pull master into develop to keep it up to date
+        # this accomodates software_workflow = downstream and software_workflow = upstream (when dbtable_retain commits)
+        if ([ "${branch_this}" = "develop" ]); then
             cd "/var/www/repositories/apache/${domain}" \
                 && sudo ssh-agent bash -c "ssh-add /catapult/secrets/id_rsa; git fetch" \
                 && sudo ssh-agent bash -c "ssh-add /catapult/secrets/id_rsa; git pull origin master" \
@@ -136,6 +155,7 @@ else
         sudo rm --force --recursive "/var/www/repositories/apache/${domain}"
     fi
     sudo ssh-agent bash -c "ssh-add /catapult/secrets/id_rsa; git clone --recursive -b ${branch} ${repo} /var/www/repositories/apache/${domain}"
+    touch "/catapult/provisioners/redhat/logs/domain.${domain}.changes"
 fi
 
 touch "/catapult/provisioners/redhat/logs/git.${domain}.complete"
