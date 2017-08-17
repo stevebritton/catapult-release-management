@@ -1,10 +1,8 @@
 source "/catapult/provisioners/redhat/modules/catapult.sh"
 
-if [ "${1}" == "dev" ]; then
-    redhat_ip="$(echo "${configuration}" | shyaml get-value environments.${1}.servers.redhat.ip)"
-else
-    redhat_ip="$(echo "${configuration}" | shyaml get-value environments.${1}.servers.redhat.ip_private)"
-fi
+
+# IPTABLES CONFIGURATION
+echo -e "\n> configuring iptables-services"
 
 # disable the baked in firewalld
 sudo systemctl stop firewalld
@@ -18,6 +16,20 @@ sudo systemctl start iptables
 
 # ensure iptables starts during boot
 sudo systemctl enable iptables
+
+
+
+# IPTABLES RULES BEFORE
+echo -e "\n> iptables rules before configuration"
+
+# output the iptables
+echo -e "> check for rules which didn't get a hit (0 packets / 0 bytes)"
+sudo iptables --list --numeric --verbose
+
+
+
+# IPTABLES RULES CONFIGURATION
+echo -e "\n> iptables rules configuration"
 
 # establish default policies
 sudo iptables --policy INPUT ACCEPT
@@ -69,10 +81,33 @@ if [ "${4}" == "apache" ]; then
         --match state\
         --state NEW,ESTABLISHED\
         --jump ACCEPT
+# allow incoming traffic for bamboo
+elif [ "${4}" == "bamboo" ]; then
+    sudo iptables\
+        --append INPUT\
+        --protocol tcp\
+        --dport 80\
+        --match state\
+        --state NEW,ESTABLISHED\
+        --jump ACCEPT
+    sudo iptables\
+        --append INPUT\
+        --protocol tcp\
+        --dport 443\
+        --match state\
+        --state NEW,ESTABLISHED\
+        --jump ACCEPT
+    sudo iptables\
+        --append INPUT\
+        --protocol tcp\
+        --dport 8085\
+        --match state\
+        --state NEW,ESTABLISHED\
+        --jump ACCEPT
 # allow incoming database traffic
 elif [ "${4}" == "mysql" ]; then
+    # allow any connection from the developer workstation
     if [ "${1}" == "dev"  ]; then
-        # from developer machine
         sudo iptables\
             --append INPUT\
             --protocol tcp\
@@ -80,8 +115,9 @@ elif [ "${4}" == "mysql" ]; then
             --match state\
             --state NEW,ESTABLISHED\
             --jump ACCEPT
+    # restrict incoming connection only from redhat private interface
     else
-        # from the redhat server
+        redhat_ip="$(catapult environments.${1}.servers.redhat.ip_private)"
         sudo iptables\
             --append INPUT\
             --protocol tcp\
@@ -93,10 +129,12 @@ elif [ "${4}" == "mysql" ]; then
     fi
 fi
 
+# log everything that hasn't matched thus far
+# https://www.netfilter.org/documentation/HOWTO/packet-filtering-HOWTO-7.html
+sudo iptables --append INPUT --jump LOG --log-prefix "INPUT:DROP: " --log-level 6 --match limit --limit 5/min --limit-burst 10
+
 # now that everything is configured, we drop everything else (drop does not send any return packets, reject does)
-sudo iptables --policy INPUT DROP
-# output the iptables
-sudo iptables --list-rules
+sudo iptables --policy INPUT --jump DROP
 
 # save our newly created config
 # saves to cat /etc/sysconfig/iptables
@@ -104,3 +142,66 @@ sudo service iptables save
 
 # restart iptables service
 sudo systemctl restart iptables
+
+
+
+# IPTABLES RULES CONFIGURATION
+echo -e "\n> fail2ban service configuration and fail2ban jail/filter configuration"
+
+# install fail2ban
+sudo yum install -y fail2ban
+
+# ensure fail2ban starts during boot
+sudo systemctl enable fail2ban
+
+# ensure fail2ban starts during boot
+sudo systemctl start fail2ban
+
+# define fail2ban filters
+if [ "${4}" == "apache" ]; then
+fail2ban_filters="
+[apache-botsearch]
+enabled = true
+[sshd-ddos]
+enabled = true
+[sshd]
+enabled = true
+"
+else
+fail2ban_filters="
+[sshd-ddos]
+enabled = true
+[sshd]
+enabled = true
+"
+fi
+
+# define fail2ban jails
+# see cron_security.sh for more information
+sudo cat > /etc/fail2ban/jail.local << EOF
+[DEFAULT]
+banaction = iptables-multiport
+# "bantime" is the number of seconds that a host is banned.
+bantime  = 7200
+# a host is banned if it has generated "maxretry" during the last "findtime" seconds.
+findtime  = 3600
+# "maxretry" is the number of failures before a host get banned.
+maxretry = 5
+# enable carefully selected filters
+${fail2ban_filters}
+EOF
+
+# restart fail2ban
+sudo systemctl restart fail2ban
+
+# output the fail2ban jails
+sudo fail2ban-client status
+
+
+
+# IPTABLES RULES AFTER
+echo -e "\n> iptables rules after configuration"
+
+# output the iptables
+echo -e "> check for rules which didn't get a hit (0 packets / 0 bytes)"
+sudo iptables --list --numeric --verbose
