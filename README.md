@@ -178,6 +178,7 @@ See an error or have a suggestion? Email competition@devopsgroup.io - we appreci
         - [HTTPS and Certificates](#https-and-certificates)
         - [Forcing www](#forcing-www)
         - [Caching](#caching)
+        - [Progressive Web App](#progressive-web-app)
         - [Email](#email)
         - [Database Migrations](#database-migrations)
         - [Refreshing Databases](#refreshing-databases)
@@ -527,7 +528,7 @@ Please note that Bamboo Cloud has an end-of-life January 31, 2017. Catapult used
 
 ### 6. **Email:**
 1. **SendGrid** sign-up and configuration
-    1. Create a New Relic account at https://sendgrid.com/
+    1. Create a SendGrid account at https://sendgrid.com/
     2. Sign in to your SendGrid account
     3. Go to Settings > API Keys.
     4. Generate an API key named "Catapult" and place at `~/secrets/configuration.yml["company"]["sendgrid_api_key"]`
@@ -905,8 +906,8 @@ Catapult enforces software configuration best practice for software fresh instal
 
 Software | `software_auto_update` Support | Install Approach | Install Notes
 ---------|--------------------------------|------------------|--------------
-`codeigniter2`      | [:x:](http://www.codeigniter.com/userguide2/installation/upgrading.html) |          |
-`codeigniter3`      | [:x:](http://www.codeigniter.com/user_guide/installation/upgrading.html) |          |
+`codeigniter2`      | [:white_check_mark:](http://www.codeigniter.com/userguide2/installation/upgrading.html) |          | Follow the [Installation Instructions](https://www.codeigniter.com/userguide2/installation/index.html).
+`codeigniter3`      | [:white_check_mark:](https://www.codeigniter.com/userguide3/installation/upgrading.html) |          | Follow the [Installation Instructions](https://www.codeigniter.com/userguide3/installation/index.html).
 `drupal6`           | :white_check_mark:                                                       | Drush    | `drush dl drupal-6`
 `drupal7`           | :white_check_mark:                                                       | Drush    | `drush dl drupal-7`
 `elgg1`             | [:x:](http://learn.elgg.org/en/2.0/admin/upgrading.html)                 | Fork     | Follow the installation [Overview](http://learn.elgg.org/en/2.0/intro/install.html). Catapult requires the `dataroot` directory to be within the webroot, it's pertinant to create a `.gitignore` to ignore and `.htaccess` to deny access to this directory.
@@ -1008,7 +1009,7 @@ Software | Approach | Documentation
 
 ### Caching ###
 
-Caching plays a very important role in the performance of your website, Catapult generally enforces caching of files to 7 days. To ensure that a new website release is reflected in a user's browser you will want to adopt [semantic versioning]((http://semver.org/spec/v2.0.0.html)) of files. Here's an example:
+Caching plays a very important role in the performance of your website. Catapult generally enforces caching of files to 7 days. To ensure that a new website release is reflected in a user's browser you will want to adopt [semantic versioning]((http://semver.org/spec/v2.0.0.html)) of files. Here's an example:
 
 `<link rel="stylesheet" href="style.min.css?v=3.4.1">`
 
@@ -1018,9 +1019,12 @@ Ready to deploy a new release? Update the version number and the cache will be "
 
 Each software type will vary as to the standard convention of asset versioning, here is a [Wordpress example](https://wordpress.stackexchange.com/a/90824) to get you started.
 
+### Progressive Web App ###
+Progressive Web App (PWA), in general, is a term used to denote web apps that use the latest web technologies. Catapult allows a `manifest.json` file to be placed in your `webroot`. Note that this will be accessible regardless of whether or not you are using the `force_auth` option, which is necessary because `manifest.json` is sometimes accessed outside of the session under which you authenticated. Don't forget to include the `link` tag `<link rel="manifest" href="/manifest.json">` to notify the browser of your manifest. More information regarding PWAs can be found at Google's [Web App Manifest](https://developers.google.com/web/fundamentals/engage-and-retain/web-app-manifest/) and [Progressive Web App Checklist](https://developers.google.com/web/progressive-web-apps/checklist).
+
 ### Email ###
 
-Email delivery is an art, there are many considerations when trying to get an email into someone's inbox. Some considerations include, IP reputation, bounce management, analytics visibility, and more. For that reason, Catapult requires setup of a SendGrid accoung and recommned use of. To configure SendGrid with your software type, please set the SMTP configurtion to the following:
+Email delivery is an art, there are many considerations when trying to get an email into someone's inbox. Some considerations include, IP reputation, bounce management, analytics visibility, and more. For that reason, Catapult requires setup of a SendGrid account and configuration of SMTP within your website's software. To configure SendGrid with your software type, please set the SMTP configurtion to the following:
 
 * SMTP host: `smtp.sendgrid.net`
 * SMTP port: `587`
