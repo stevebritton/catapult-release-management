@@ -63,7 +63,7 @@ Catapult orchestrates the following key components of DevOps to provide you with
         * VirtualBox - Red Hat and Windows
     * **Cloud**
         * DigitalOcean - Red Hat
-        * AWS - Windows
+        * Amazon Web Services (AWS) - Windows
 * **DNS Management**
     * **Local**
         * vagrant-hostmanager
@@ -80,34 +80,51 @@ Catapult orchestrates the following key components of DevOps to provide you with
 
 
 
-## Supported Software ##
+## Supported Website Software ##
 
-Catapult intelligently manages the following software that has been chosen from trending usage statistics from [BuiltWith](https://trends.builtwith.com/cms) and aligns with the [CentOS 7 trunk](http://mirror.centos.org/centos/7/os/x86_64/Packages/) along with the [Software Collections trunk](https://www.softwarecollections.org/):
+Catapult intelligently manages the following website software that have been chosen from trending usage statistics from [BuiltWith](https://trends.builtwith.com/cms) and aligns with the [CentOS 7](http://mirror.centos.org/centos/7/os/x86_64/Packages/) and [Software Collections](https://www.softwarecollections.org/) trunks:
 
-Software | [Key](#websites) | Required PHP Version | Defined PHP Version | Released | End-of-Life
+Software | [Key](#websites) | Required PHP Version | Running PHP Version | Released | End-of-Life
 ---------|------------------|---------------------|---------------------|----------|------------
 CodeIgniter 2                     | `codeigniter2`         | 5.1.6  | 5.4 | January 28, 2011   | [October 31, 2015](http://forum.codeigniter.com/thread-61357.html)
-CodeIgniter 3                     | `codeigniter3`         | 5.6    | 5.4 | March 30, 2015     | 
+CodeIgniter 3                     | `codeigniter3`         | 5.6    | 7.1 | March 30, 2015     |
+concrete5 8                       | `concrete58`           | 5.5.9  | 7.1 | December 1, 2016   |
 Drupal 6                          | `drupal6`              | 5.4    | 5.4 | February 13, 2008  | [February 24, 2016](https://www.drupal.org/drupal-6-eol)
-Drupal 7                          | `drupal7`              | 5.2.5  | 5.6 | January 5, 2011    |
-Drupal 8                          | `drupal8`              | 5.5.9  | 7.0 | November 19, 2015  |
+Drupal 7                          | `drupal7`              | 5.2.5  | 7.1 | January 5, 2011    |
+Drupal 8                          | `drupal8`              | 5.5.9  | 7.1 | November 19, 2015  |
 Elgg 1                            | `elgg1`                | 5.4    | 5.4 | August 20, 2008    |
-Elgg 2                            | `elgg2`                | 5.6    | 5.6 | December 14, 2015  |
-ExpressionEngine 3                | `expressionengine3`    | 5.3.10 | 5.4 | October 13, 2015   |
-Joomla 3                          | `joomla3`              | 5.3.10 | 5.6 | September 27, 2012 |
-Laravel 5                         | `laravel5`             | 7.0.0  | 7.0 | February 4, 2015   |
-MediaWiki 1                       | `mediawiki1`           | 5.5.9  | 5.6 | December 8, 2003   |
-Moodle 3                          | `moodle3`              | 5.6.5  | 5.6 | November 16, 2015  |
+Elgg 2                            | `elgg2`                | 5.6    | 7.1 | December 14, 2015  |
+ExpressionEngine 3                | `expressionengine3`    | 5.3.10 | 5.4 | October 13, 2015   | [December 14, 2018](https://expressionengine.com/blog/version-3-end-of-life)
+Joomla 3                          | `joomla3`              | 5.3.10 | 7.1 | September 27, 2012 |
+Laravel 5                         | `laravel5`             | 7.0.0  | 7.1 | February 4, 2015   |
+MediaWiki 1                       | `mediawiki1`           | 5.5.9  | 7.1 | December 8, 2003   |
+Moodle 3                          | `moodle3`              | 5.6.5  | 7.1 | November 16, 2015  |
 SilverStripe 3                    | `silverstripe3`        | 5.3.3  | 5.4 | June 29, 2012      |
-SuiteCRM 7                        | `suitecrm7`            | 5.5    | 5.6 | October 21, 2013   |
-WordPress 4                       | `wordpress4`           | 5.2.4  | 7.0 | September 4, 2014  |
-XenForo 1                         | `xenforo1`             | 5.2.11 | 5.4 | March 8, 2011      |
+SuiteCRM 7                        | `suitecrm7`            | 5.5    | 7.1 | October 21, 2013   | [November 15, 2019](http://support.sugarcrm.com/Resources/Supported_Versions/)
+WordPress 4                       | `wordpress4`           | 5.2.4  | 7.1 | September 4, 2014  |
+WordPress 5                       | `wordpress5`           | 5.2.4  | 7.1 | December 6, 2018   |
+XenForo 1                         | `xenforo1`             | 5.2.11 | 5.4 | March 8, 2011      | [December 31, 2019](https://xenforo.com/community/threads/xenforo-1-5-end-of-life-schedule.157679/)
+XenForo 2                         | `xenforo2`             | 5.4.0  | 7.1 | November 28, 2017  |
 Zend Framework 2                  | `zendframework2`       | 5.3.23 | 5.4 | September 5, 2012  |
 
-Catapult additionally supports basic PHP projects that do not have a database requirement:
+If you do not see your website software listed, Catapult supports basic PHP projects that do not have a database requirement.
 
-* PHP 5.4 compatible project
+* When an above software type is not defined, the default PHP version that is used is PHP 5.4. This is not configurable.
+* PHP-less static site generators, such as, [Jekyll](https://jekyllrb.com/), are supported.
 
+### PHP Versions ###
+
+Catapult maintains a high level of integrity when it comes to PHP versions, through maintaining security, backwards compatibility, performance, and new features. Below is an overview of the PHP versions used in Catapult and when you can expect these versions to be End-of-Life (EOL). We will bump to the next highest version of PHP in the list when nearing the EOL - this provides ample time for support of the newer PHP version by the software. In cases where a software version is sunsetting, the CentOS Long-term Support (LTS) version of PHP is used.
+
+PHP Version | End-of-Life | Maintainer | Updater
+------------|-------------|------------|--------
+5.4 | June 30, 2024 | [CentOS](https://wiki.centos.org/FAQ/General#head-fe8a0be91ee3e7dea812e8694491e1dde5b75e6d) | [RedHat](https://access.redhat.com/security/updates/backporting)
+7.1 | December 1, 2019 | [SCLO](https://www.softwarecollections.org/en/scls/rhscl/rh-php71/) | [RedHat](https://developers.redhat.com/products/softwarecollections/overview/)
+7.2 | November 30, 2020 | [SCLO](https://www.softwarecollections.org/en/scls/rhscl/rh-php72/) | [RedHat](https://developers.redhat.com/products/softwarecollections/overview/)
+
+### End-of-Life (EOL) ###
+
+Catapult tracks vendor announced EOL dates for website software and a red EOL date will be displayed during `vagrant status` if one of your website's software is EOL. Currently Catapult has no plan to block Catapult supported software that is past its EOL date - it is up to you to move to the next major supported version.
 
 ## Competition ##
 
@@ -119,10 +136,10 @@ Source                                        | Open                            
 Subscription Feature Set                      | Bundled                               | Separated                     | Separated
 Traditional Tooling (VMs & Shell)             | :white_check_mark:                    | :x:                           | :x:
 Multi-Platform (Linux & Windows)              | :white_check_mark:                    | :x:                           | :x:
-Supported PHP Software                        | 17                                    | 2                             | 1
+Supported PHP Software                        | 20+                                   | 2                             | 1
 Supported .NET Software                       | TBA                                   | :x:                           | :x:
-Minimum Bundled<br>Monthly Cost               | $40                                   | $400                          | $134
-Websites per Instance/Subscription            | Unlimited                             | 1                             | 1
+Minimum Bundled<br>Monthly Cost               | $45                                   | $400                          | $134
+Websites per instance                         | Unlimited                             | 1                             | 1
 Managed Workflow                              | Git Flow (branch-based environments)  | :x:                           | :x:
 Managed Software Workflow Model               | Upstream or Downstream                | :x:                           | :x:
 Agile Methodology Focus                       | Scrum                                 | :x:                           | :x:
@@ -155,7 +172,7 @@ See an error or have a suggestion? Email competition@devopsgroup.io - we appreci
 - [Catapult](#catapult)
     - [Platform Overview](#platform-overview)
     - [Security Disclosure](#security-disclosure)
-    - [Supported Software](#supported-software)
+    - [Supported Website Software](#supported-website-software)
     - [Competition](#competition)
     - [Table of Contents](#table-of-contents)
 - [Setup Catapult](#setup-catapult)
@@ -175,16 +192,20 @@ See an error or have a suggestion? Email competition@devopsgroup.io - we appreci
         - [Websites](#websites)
     - [Website Development](#website-development)
         - [Website Repositories](#website-repositories)
-        - [Software Updates and Fresh Installs](#software-updates-and-fresh-installs)
+        - [Software Fresh Installs](#software-fresh-installs)
+        - [Software Auto Updates](#software-auto-updates)
         - [HTTPS and Certificates](#https-and-certificates)
         - [Forcing www](#forcing-www)
+        - [Debug Output](#debug-output)
         - [Cache Busting](#cache-busting)
         - [Progressive Web App](#progressive-web-app)
         - [Email](#email)
+        - [Upload Limits](#upload-limits)
         - [Database Migrations](#database-migrations)
         - [Refreshing Databases](#refreshing-databases)
         - [Connecting to Databases](#connecting-to-databases)
         - [Production Hotfixes](#production-hotfixes)
+    - [Automated Deployment Cycle](#automated-deployment-cycle)
     - [Maintenance Cycle](#maintenance-cycle)
         - [Daily](#daily)
         - [Weekly](#weekly)
@@ -193,9 +214,11 @@ See an error or have a suggestion? Email competition@devopsgroup.io - we appreci
         - [Website Rollbacks](#website-rollbacks)
 - [Security](#security)
     - [Preventive Controls](#preventive-controls)
-    - [Detective Controls](#reactive-controls)
+    - [Detective Controls](#detective-controls)
     - [Corrective Controls](#corrective-controls)
-    - [Security Breach Notification Laws](#security-breach-notification-laws)
+    - [Data Protection](#data-protection)
+        - [United States](#united-states)
+        - [Europe](#europe)
 - [Compliance](#compliance)
     - [Cloud Compliance](#cloud-compliance)
     - [Self Compliance](#self-compliance)
@@ -219,6 +242,7 @@ See an error or have a suggestion? Email competition@devopsgroup.io - we appreci
 Catapult requires a [Developer Setup](#developer-setup), [Instance Setup](#instance-setup), and [Services Setup](#services-setup) as described in the following sections.
 
 **Please Note:**
+* You must run most commands from an elevated shell. For macOS and Linux, type `sudo su` in a terminal window, or for Windows, right-clicking on Command Prompt from the Start Menu and selecting "Run as Administrator".
 * It is advised to turn off any antivirus software that you may have installed during setup and usage of Catapult - tasks such as forwarding ports and writing hosts files may be blocked.
 * Virtualizaion must be enabled in the BIOS of the developer's workstation - follow [this how-to](https://access.redhat.com/documentation/en-US/Red_Hat_Enterprise_Linux/5/html/Virtualization/sect-Virtualization-Troubleshooting-Enabling_Intel_VT_and_AMD_V_virtualization_hardware_extensions_in_BIOS.html) to get started.
 * Using a VPN client during usage of LocalDev may result in lost communication between your workstation and the guests, requiring a `vagrant reload` to regain SSH and/or WinRM communication.
@@ -227,23 +251,23 @@ Catapult requires a [Developer Setup](#developer-setup), [Instance Setup](#insta
 
 Catapult is controlled via Vagrant and the command line of a developer's workstation - below is a list of required software that will need to be installed.
 
-* OS X workstations: Compatible and supported
+* macOS workstations: Compatible and supported
 * Linux workstations: Compatible and supported
 * Windows workstations: Limited testing and support
 
 1. **Vagrant**
-    * **Using OS X?**
+    * **Using macOS?**
         1. Ensure Xcode Command Line Tools are installed by running `xcode-select --install` from Terminal
-        2. Download and install the latest verson of Vagrant from https://www.vagrantup.com/downloads.html
+        2. Download and install the latest version of Vagrant v2.x from https://releases.hashicorp.com/vagrant/
     * **Using Windows?**
-        1. Download and install the latest verson of Vagrant from https://www.vagrantup.com/downloads.html
+        1. Download and install the latest version of Vagrant v2.x from https://releases.hashicorp.com/vagrant/
     * **Using Linux (Debian, Ubuntu)?**
-        1. Download the latest version of Vagrant respective to your architecture from https://releases.hashicorp.com/vagrant/ by running e.g. `wget https://releases.hashicorp.com/vagrant/1.8.1/vagrant_1.8.1_x86_64.deb`
-        2. Install Vagrant using dpkg e.g. `sudo dpkg --install vagrant_1.8.1_x86_64.deb`
+        1. Download the latest version of Vagrant v2.x respective to your architecture from https://releases.hashicorp.com/vagrant/ by running e.g. `wget https://releases.hashicorp.com/vagrant/2.2.2/vagrant_2.2.2_x86_64.deb`
+        2. Install Vagrant using dpkg e.g. `sudo dpkg --install vagrant_2.2.2_x86_64.deb`
         3. Install Network File System (NFS) `sudo apt-get install nfs-kernel-server`
     * **Using Linux (Fedora, Red Hat, Suse)?**
-        1. Download the latest version of Vagrant respective to your architecture from https://releases.hashicorp.com/vagrant/ by running e.g. `wget https://releases.hashicorp.com/vagrant/1.8.1/vagrant_1.8.1_x86_64.rpm`
-        2. Install Vagrant using yum e.g. `sudo yum install vagrant_1.8.1_x86_64.rpm`
+        1. Download the latest version of Vagrant v2.x respective to your architecture from https://releases.hashicorp.com/vagrant/ by running e.g. `wget https://releases.hashicorp.com/vagrant/2.2.2/vagrant_2.2.2_x86_64.rpm`
+        2. Install Vagrant using yum e.g. `sudo yum install vagrant_2.2.2_x86_64.rpm`
 2. **Vagrant Plugins**
     1. Open your command line and install the following Vagrant plugins:
         1. `vagrant plugin install vagrant-aws`
@@ -255,16 +279,16 @@ Catapult is controlled via Vagrant and the command line of a developer's worksta
         4. `vagrant plugin install vagrant-vbguest`
             * [![Gem](https://img.shields.io/gem/dt/vagrant-vbguest.svg)](https://rubygems.org/gems/vagrant-vbguest)
 3. **VirtualBox**
-    * **Using OS X?**
-        1. Download and install the latest version of VirtualBox from https://www.virtualbox.org/wiki/Downloads
+    * **Using macOS?**
+        1. Download and install the latest version of VirtualBox v5.2 from https://www.virtualbox.org/wiki/Downloads
     * **Using Windows?**
-        1. Download and install the latest version of VirtualBox from https://www.virtualbox.org/wiki/Downloads
+        1. Download and install the latest version of VirtualBox v5.2 from https://www.virtualbox.org/wiki/Downloads
     * **Using Linux (Debian, Ubuntu)?**
-        1. Download and install the latest version of VirtualBox using Advanced Packaging Tool (APT) `sudo apt-get install virtualbox`
+        1. Download and install the latest version of VirtualBox v5.2 using Advanced Packaging Tool (APT) `sudo apt-get install virtualbox`
     * **Using Linux (Fedora, Red Hat, Suse)?**
-        1. Download and install the latest version of VirtualBox using Yellowdog Updater, Modifed (yum) `sudo yum install virtualbox`
+        1. Download and install the latest version of VirtualBox v5.2 using Yellowdog Updater, Modifed (yum) `sudo yum install virtualbox`
 4. **GPG2**
-    * **Using OS X?**
+    * **Using macOS?**
         1. Download and install GPG Suite from https://gpgtools.org
     * **Using Windows?**
         1. Download and install Gpg4win from http://gpg4win.org/download.html
@@ -272,7 +296,7 @@ Catapult is controlled via Vagrant and the command line of a developer's worksta
         1. GPG is included in the base distribution in most cases.
         1. If being prompted by the Passphrase GUI Agent, comment out 'use-agent' in `~/.gnupg/gpg.conf`
 5. **Git**
-    * **Using OS X?**
+    * **Using macOS?**
         1. Git commandline is included in the base distribution in most cases.
         1. For a streamlined Git GUI, download and install SourceTree from https://www.sourcetreeapp.com/
     * **Using Windows?**
@@ -281,7 +305,7 @@ Catapult is controlled via Vagrant and the command line of a developer's worksta
         1. Git commandline is included in the base distribution in most cases.
         1. For a streamlined Git GUI, download and install SmartGit from http://www.syntevo.com/smartgit/
 6. **Terminal**
-    * **Using OS X?**
+    * **Using macOS?**
         1. The terminal in the base distrubitions are 100% compatible.
     * **Using Windows?**
         1. Download and install Cygwin from https://cygwin.com/install.html
@@ -300,10 +324,13 @@ Having your team use the same tools is beneficial to streamlining your workflow 
 
 ## Instance Setup ##
 
-Catapult is quick to setup. Fork the Github repository and start adding your configuration.
+Catapult is quick to setup. You have the option of using GitHub (public) or Bitbucket (private) to store your Catapult instance. Your Catapult secrets are encrypted and safe, but please use your best judgment when choosing a destination for your Catapult instance.
 
 1. **Fork Catapult**
-    1. Fork https://github.com/devopsgroup-io/catapult and clone via SourceTree or the git utility of your choice.
+    * **GitHub (public)**
+        1. Fork https://github.com/devopsgroup-io/catapult and clone via SourceTree or the git utility of your choice.
+    * **BitBucket (private)**
+        1. From BitBucket, create a new repository and import https://github.com/devopsgroup-io/catapult. Then clone via SourceTree or the git utility of your choice.
 2. **SSH Key Pair**
     1. Create a *passwordless* SSH key pair - this will drive authentication for Catapult.
         1. For instructions please see https://help.github.com/articles/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent/
@@ -332,23 +359,20 @@ Catapult is designed with a distributed services model, below are the required t
 
 Service | Product | Use Case | Monthly Cost
 --------|---------|----------|-------------
-&dagger;Cloud Hosting: Red Hat (PHP) | DigitalOcean | 6 Web and Database Servers | \*$30+
-&dagger;Cloud Hosting: Windows (.NET) | Amazon Web Services (AWS) | 6 Web and Database Servers | \*$80+
+&dagger;Cloud Hosting: Red Hat (PHP) | DigitalOcean Droplets | Web and Database Servers (6) | \*$30+
+&dagger;Cloud Hosting: Windows (.NET) | Amazon Web Services (AWS) EC2 | Web and Database Servers (6) | \*$80+
 Source Code Repositories | Atlassian Bitbucket | Private Repositories | Free
 Source Code Repositories | GitHub | Public Repositories | Free
-Continuous Integration | Amazon Web Services (AWS) | Build Server | \**$0+
-Continuous Integration | Atlassian Bamboo Server | Deployment Management | $10
+Continuous Integration | Atlassian Bamboo Server | Build Server | $15
 DNS | CloudFlare | Cloud DNS | Free
-Monitoring | New Relic Application Performance Monitoring (APM), Browser, Server, and \***Synthetics | Performance and Infrastructure Monitoring | Free
-**Total** | | | &dagger;$40+
+Monitoring | New Relic Application Performance Monitoring (APM), Browser, Server, and \**Synthetics | Performance and Infrastructure Monitoring | Free
+**Total** | | | &dagger;$45+
 
 &dagger; Only one platform (Red Hat or Windows) is required to have a full-featured infrastructure. Generally speaking, the industry standard Red Hat platform will be used.
 
 \* Depending on load, resources may need to be increased, starting at an additional [$5 per month per server](https://www.digitalocean.com/pricing/).
 
-\** New AWS customers receive 1-year free of micro services. Beyond this period, an example of running nightly builds for all environments only incur $2-3 per month.
-
-\*** New Relic customers receive a trial "pro" period ranging from 14-days to 30-days, however, there is [no free tier beyond the trial](#partnerships)
+\** New Relic customers receive a trial "pro" period ranging from 14-days to 30-days, however, there is [no free tier beyond the trial](#partnerships)
 
 ### 1. **Cloud Hosting:**
 1. **DigitalOcean** sign-up and configuration
@@ -398,52 +422,17 @@ Bitbucket provides free private repositories and GitHub provides free public rep
     2. Add your newly created `id_rsa.pub` from `~/secrets/id_rsa.pub` key in https://github.com/settings/ssh named "Catapult"
 
 ### 3. **Automated Deployments:**
-Please note that Bamboo Cloud's end-of-life is January 31, 2017. For new setups, please use the **Bamboo Server sign-up and set-up** documentation. Existing Catapult user's may still be using Bamboo Cloud, in that case, please use the **Bamboo Cloud sign-up and set-up** documentation.
-
-**Bamboo Cloud sign-up and set-up**
-
-1. Create a Bamboo Cloud account at https://www.atlassian.com/software/bamboo
-2. Sign in to your new custom Bamboo instance https://[your-name-here].atlassian.net
-3. Place your Bamboo base URL at `~/secrets/configuration.yml["company"]["bamboo_base_url"]`, the format should be https://[your-name-here].atlassian.net/builds/
-4. Click the settings gear from the top right in the header and select Elastic instances:
-    1. Click Configuration from the left
-    2. Click Edit configuration
-        1. **Amazon Web Services configuration**
-            1. Set your AWS EC2 "Bamboo" Access Key ID and Secret Access Key from `~/secrets/configuration.yml["company"]["aws_access_key"]` and `~/secrets/configuration.yml["company"]["aws_secret_key"]`
-            2. Region: `US East (Northern Virginia)`
-        2. **Automatic elastic instance management**
-            1. Elastic instance management: `Custom`
-            2. Idle agent shutdown delay: `10`
-            3. Allowed non-Bamboo instances: `1`
-            4. Maximum number of instances to start at once: `2`
-            5. Number of builds in queue threshold: `1`
-            6. Number of elastic builds in queue threshold: `1`
-            7. Average queue time threshold: `2`
-        3. Click Save
-5. Click the settings gear from the top right in the header and select Elastic instances:
-    1. Click Image configurations from the left
-        1. Disable all of the elastic images
-        2. Create elastic image configuration:
-            1. Name: `Catapult`
-            2. AMI ID: `ami-eb5b8080`
-            3. Instance type: `T2 Burstable Performance Micro`
-            4. Availability Zone: `Chosen by EC2`
-            5. Product: `Linux/UNIX`
-            6. Click Save
 
 **Bamboo Server set-up**
 
 1. Sign up for an Atlassian account at https://my.atlassian.com/
-2. Access your My Atlassian license section at https://my.atlassian.com/products/index
-    * Please read the Bamboo Licensing and Pricing page for more information https://www.atlassian.com/licensing/bamboo
-3a. For current Bamboo Cloud customers transitioning to Bamboo Server, you will see a Bamboo Starter License
-3b. For new Bamboo customers, please purchase a Bamboo Server license from https://www.atlassian.com/purchase/product/bamboo 
-4. It's now time to bring up your build server, please run `vagrant up ~/secrets/configuration.yml["company"]["name"]-build`
+2. Purchase the $10 Bamboo Server license from https://www.atlassian.com/purchase/product/bamboo 
+3. It's now time to bring up your build server, please run `vagrant up ~/secrets/configuration.yml["company"]["name"]-build`
     * The initial `up` will take some time for, please be patient
-5. Login to DigitalOcean to obtain the IP address of the virtual machine to access via URL
+4. Login to DigitalOcean to obtain the IP address of the virtual machine to access via URL
     * Place your Bamboo base URL at `~/secrets/configuration.yml["company"]["bamboo_base_url"]`, the format should be http://[digitalocean-ip-here]/
-6. Once your Bamboo Server instance is accessible via URL, you will be prompted with a license prompt, enter your license.
-7. You will next be prompted to enter the following information:
+5. Once your Bamboo Server instance is accessible via URL, you will be prompted with a license prompt, enter your license.
+6. You will next be prompted to enter the following information:
     * Username (required) - root
     * Password (required) - specify a complex password
     * Confirm password (required)
@@ -455,7 +444,6 @@ Please note that Bamboo Cloud's end-of-life is January 31, 2017. For new setups,
 To avoid having to manually configure the Bamboo project, plans, stages, jobs, and tasks configuration, you may optionally install and purchase the "Bob Swift Atlassian Add-ons - Bamboo CLI Connector" Bamboo add-on. Otherwise, the manual setup configuration steps are outlined below:
 
 1. Place your Bamboo username at `~/secrets/configuration.yml["company"]["bamboo_username"]`
-    * Normally admin for Bamboo Cloud
     * Normally root for Bamboo Server
 2. Place your Bamboo password at `~/secrets/configuration.yml["company"]["bamboo_password"]`
 3. Disable anonymous user access by clicking the gear at the top right and going to Overview
@@ -544,6 +532,8 @@ To avoid having to manually configure the Bamboo project, plans, stages, jobs, a
 ### 6. **Email:**
 1. **SendGrid** sign-up and configuration
     1. Create a SendGrid account at https://sendgrid.com/
+        1. Place the username that you used to sign up for SendGrid at `~/secrets/configuration.yml["company"]["sendgrid_username"]`
+        2. Place the password of the account for SendGrid at `~/secrets/configuration.yml["company"]["sendgrid_password"]`
     2. Sign in to your SendGrid account
     3. Go to Settings > API Keys.
     4. Generate an API key named "Catapult" and place at `~/secrets/configuration.yml["company"]["sendgrid_api_key"]`
@@ -719,7 +709,7 @@ Catapult follows Gitflow for its **infrastructure configuration** *and* **websit
 |            | LocalDev | Test | QC | Production
 |------------|----------|------|----|-----------
 **Running Branch**                                       | *develop*                                                   | *develop*                                                                                                      | *release*                                                      | *master*
-**Deployments**                                          | Manually via `vagrant provision`                            | Automatically via Bamboo (new commits to **develop**)                                                          | Automatically via Bamboo (new commits to **release**)          | Manually via Bamboo
+**Automated Deployments**                                | No, manually via `vagrant provision`                        | Yes, triggered by new commits to **develop**                                                                   | Yes, nightly or manually via Bamboo                            | Yes, nightly or manually via Bamboo
 **Testing Activities**                                   | Component Test                                              | Integration Test, System Test                                                                                  | Acceptance Test, Release Test                                  | Operational Qualification
 **Scrum Activity**                                       | Sprint Start: Development of User Stories                   | Daily Scrum                                                                                                    | Sprint Review                                                  | Sprint End: Accepted Product Release
 **Scrum Roles**                                          | Development Team                                            | Scrum Master, Development Team, Product Owner (optional)                                                       | Scrum Master, Development Team, Product Owner                  | Product Owner
@@ -812,12 +802,13 @@ The following options are available:
     * required: yes
     * example: `domain: example.com`
     * example: `domain: subdomain.example.com`
-        * one subdomain level is supported for this root domain entry (`subdomain.example.com`)
         * this root domain entry is the Production canonical domain name without `www.`
             * a `www.` subdomain is created for you
             * the key for all management orchestration of this website
+        * one subdomain level is supported for this root domain entry (`subdomain.example.com`)
         * manages DNS of LocalDev (via hosts file) and Test, QC, Production (via CloudFlare)
             * `dev.example.com`, `test.example.com`, `qc.example.com`, `example.com`
+            * `www.dev.example.com`, `www.test.example.com`, `www.qc.example.com`, `www.example.com`
 * `domain_tld_override:`
     * required: no
     * example: `domain_tld_override: mycompany.com`
@@ -825,6 +816,7 @@ The following options are available:
             * useful when you cannot or do not wish to host the Test/QC website at the `domain`
         * appends the `domain_tld_override` for Environments
             * `dev.example.com.mycompany.com`, `test.example.com.mycompany.com`, `qc.example.com.mycompany.com`, `example.com.mycompany.com`
+            * `www.dev.example.com.mycompany.com`, `www.test.example.com.mycompany.com`, `www.qc.example.com.mycompany.com`, `www.example.com.mycompany.com`
         * PLEASE NOTE: When removing this option from a website with `software:`, you need to manually replace URLs in the database respective to the `software_workflow:` option.
             * ie `vagrant ssh mycompany.com-test-redhat-mysql`
             * `wp-cli --allow-root --path="/var/www/repositories/apache/example.com/(webroot if applicable)" search-replace ":\/\/(www\.)?(dev\.|test\.)?(example\.com\.mycompany\.com)" "://example.com" --regex`
@@ -837,17 +829,29 @@ The following options are available:
     * required: no
     * dependency: `force_auth:`
     * example: `force_auth_exclude: ["production"]`
-        * array of select environments ["dev","test","qc","production"] to exclude from the `force_auth` option
+        * array of select environments `["dev","test","qc","production"]` to exclude from the `force_auth` option
 * `force_https:`
     * required: no
     * option: `force_https: true`
         * rewrites all http traffic to https
         * all `dev.` domains in LocalDev will have an unsigned certificate warning
         * free certificates are created and managed for you compliments of CloudFlare (single-subdomain) and Let's Encrypt (multi-subdomain)
+* `force_ip:`
+    * required: no
+    * example: `force_ip: ["208.80.154.224"]`
+        * an array of valid IPv4 or IPv6 addresses that denies all traffic except for traffic coming from the defined addresses
+        * option applies to LocalDev, Test, QC, and Production unless `force_ip_exclude` is defined
+        * can be used as an alternative to `force_auth` for when HTTP basic authentication cannot be used. e.g. [Drupal 8 Basic Auth Module](https://www.drupal.org/project/drupal/issues/2842858)
+        * can be used in addition to `force_auth` for added security
+* `force_ip_exclude:`
+    * required: no
+    * dependency: `force_ip:`
+    * example: `force_ip_exclude: ["production"]`
+        * array of select environments `["dev","test","qc","production"]` to exclude from the `force_ip` option
 * `repo:`
     * required: yes
     * example: `repo: git@github.com:devopsgroup-io/devopsgroup-io.git`
-        * the existing source code repository of your website (please create one if none exists)
+        * the existing source code repository of your website (repo automatically created if none exists)
         * GitHub and Bitbucket over SSH are supported, HTTPS is not supported
 * `software:`
     * required: no
@@ -862,6 +866,7 @@ The following options are available:
         * manages software admininistrator account integrity
     * option: `software: codeigniter2`
     * option: `software: codeigniter3`
+    * option: `software: concrete58`
     * option: `software: drupal6`
     * option: `software: drupal7`
     * option: `software: drupal8`
@@ -874,15 +879,17 @@ The following options are available:
     * option: `software: silverstripe3`
     * option: `software: suitecrm7`
     * option: `software: wordpress4`
+    * option: `software: wordpress5`
     * option: `software: xenforo1`
+    * option: `software: xenforo2`
     * option: `software: zendframework2`
 * `software_auto_update:`
     * required: no
     * dependency: `software:`
     * option: `software_auto_update: true`
-        * manages software core and pluggable component (plugins, modules, etc) updates to the latest compatible versions using the software's CLI tool
+        * manages software core and pluggable component (plugins, modules, etc) updates to the latest compatible versions using the software's CLI tool or similiar method
         * updates only occur in the `software_workflow` environment
-        * not all `software` is supported, see [Software Updates and Fresh Installs](#software-updates-and-fresh-installs)
+        * not all `software` is supported, see [Software Auto Updates](#software-auto-updates)
 * `software_dbprefix:`
     * required: no
     * dependency: `software:`
@@ -918,37 +925,72 @@ The following options are available:
 
 ## Website Development ##
 
-Performing development in a local environment is critical to reducing risk by exacting the environments that exist upstream, accomplished with Vagrant and VirtualBox.
+Website development is done on the developer's workstation using the LocalDev environment for local and realtime software development in an environment that is exactly matchinng to upstream environments.
 
 ### Website Repositories ###
 
-Repositories for websites are cloned into the Catapult instance at `~/repositories` and in the respective apache or iis folder, listed by domain name.
+Once websites are added to your configuration and you have performed a provision of your LocalDev environment, repositories for websites are cloned into your Catapult instance at `~/repositories` and into the respective `apache` or `iis` folder, listed by domain name. Website repository folders are linked between the developer's workstation (host) and the LocalDev environment (guest) for realtime development.
 
-* Repositories are linked between the host and guest for realtime development.
+### Software Fresh Installs ###
 
-### Software Updates and Fresh Installs ###
+Catapult enforces software configuration best practice for software fresh installs. A typical software fresh install workflow would be to fork the software project on GitHub and add then add a new website entry to your `~/configuration.yml` file. Given the broad spectrum of software requirements there are minor configuration caveats worth noting:
 
-Catapult enforces software configuration best practice for software fresh installs and updates. A typical software fresh install workflow would be to fork the software project on GitHub and add then add a new website entry to your `~/configuration.yml` file. Given the broad spectrum of software requirements there are minor configuration caveats worth noting:
+Software | Install Approach | Install Notes
+---------|------------------|--------------
+`codeigniter2`      |          | Follow the [Installation Instructions](https://www.codeigniter.com/userguide2/installation/index.html).
+`codeigniter3`      |          | Follow the [Installation Instructions](https://www.codeigniter.com/userguide3/installation/index.html).
+`concrete58`        | Download | Download [concrete5](https://www.concrete5.org/download).
+`drupal6`           | Drush    | `drush pm-download drupal-6`
+`drupal7`           | Drush    | `drush pm-download drupal-7`
+`drupal8`           | Drush    | `drush pm-download drupal-8`
+`elgg1`             | Fork     | Follow the installation [Overview](http://learn.elgg.org/en/2.0/intro/install.html). Catapult requires the `dataroot` directory to be within the webroot, it's pertinant to create a `.gitignore` to ignore and `.htaccess` to deny access to this directory.
+`elgg2`             | Fork     | Follow the installation [Overview](http://learn.elgg.org/en/2.0/intro/install.html). Catapult requires the `dataroot` directory to be within the webroot, it's pertinant to create a `.gitignore` to ignore and `.htaccess` to deny access to this directory.
+`expressionengine3` | Download |
+`joomla3`           | Fork     |
+`laravel5`          | Composer | Follow the [Composer Create-Project](https://laravel.com/docs/5.0/installation) documentation.
+`mediawiki1`        | Fork     |
+`moodle3`           | Fork     | Catapult requires the `moodledata` directory to be within the webroot, it's pertinant to create a `.gitignore` to ignore and `.htaccess` to deny access to this directory.
+`silverstripe3`     | Composer | Follow the [Installing and Upgrading with Composer](https://docs.silverstripe.org/en/3.4/getting_started/composer/). During a fresh install, the database config file `mysite/_config.php` will need to be given 0777 permissions.
+`suitecrm7`         | Fork     |
+`wordpress4`        | Fork     |
+`wordpress5`        | Fork     |
+`xenforo1`          | Download |
+`xenforo2`          | Download |
+`zendframework2`    | Fork     | Your best bet is to start from the [zendframework/ZendSkeletonApplication](https://github.com/zendframework/ZendSkeletonApplication) GitHub project. Catapult assumes Zend Framwork is at the root of your repo and writes a database config file at `config/autoload/global.php`, you will also need to set `webroot: public/` in your Catapult configuration.
 
-Software | `software_auto_update` Support | Install Approach | Install Notes
----------|--------------------------------|------------------|--------------
-`codeigniter2`      | [:white_check_mark:](http://www.codeigniter.com/userguide2/installation/upgrading.html) |          | Follow the [Installation Instructions](https://www.codeigniter.com/userguide2/installation/index.html).
-`codeigniter3`      | [:white_check_mark:](https://www.codeigniter.com/userguide3/installation/upgrading.html) |          | Follow the [Installation Instructions](https://www.codeigniter.com/userguide3/installation/index.html).
-`drupal6`           | :white_check_mark:                                                       | Drush    | `drush dl drupal-6`
-`drupal7`           | :white_check_mark:                                                       | Drush    | `drush dl drupal-7`
-`drupal8`           | :white_check_mark:                                                       | Drush    | `drush dl drupal-8`
-`elgg1`             | [:x:](http://learn.elgg.org/en/2.0/admin/upgrading.html)                 | Fork     | Follow the installation [Overview](http://learn.elgg.org/en/2.0/intro/install.html). Catapult requires the `dataroot` directory to be within the webroot, it's pertinant to create a `.gitignore` to ignore and `.htaccess` to deny access to this directory.
-`elgg2`             | [:x:](http://learn.elgg.org/en/2.0/admin/upgrading.html)                 | Fork     | Follow the installation [Overview](http://learn.elgg.org/en/2.0/intro/install.html). Catapult requires the `dataroot` directory to be within the webroot, it's pertinant to create a `.gitignore` to ignore and `.htaccess` to deny access to this directory.
-`expressionengine3` | [:x:](https://docs.expressionengine.com/latest/installation/update.html) | Download |
-`joomla3`           | [:x:](https://docs.joomla.org/J3.x:Updating_from_an_existing_version)    | Fork     |
-`laravel5`          | [:x:](https://www.laravel.com/docs/master/upgrade)                       | Composer | Follow the [Composer Create-Project](https://laravel.com/docs/5.0/installation) documentation.
-`mediawiki1`        | [:x:](https://www.mediawiki.org/wiki/Manual:Upgrading)                   | Fork     |
-`moodle3`           | :white_check_mark:                                                       | Fork     | Catapult requires the `moodledata` directory to be within the webroot, it's pertinant to create a `.gitignore` to ignore and `.htaccess` to deny access to this directory.
-`silverstripe3`     | [:x:](https://docs.silverstripe.org/en/3.4/upgrading/)                   | Composer | Follow the [Installing and Upgrading with Composer](https://docs.silverstripe.org/en/3.4/getting_started/composer/). During a fresh install, the database config file `mysite/_config.php` will need to be given 0777 permissions.
-`suitecrm7`         | [:x:](https://suitecrm.com/wiki/index.php/Upgrade)                       | Fork     |
-`wordpress4`        | :white_check_mark:                                                       | Fork     |
-`xenforo1`          | [:x:](https://xenforo.com/help/upgrades/)                                | Download |
-`zendframework2`    | :white_check_mark:                                                       | Fork     | Your best bet is to start from the [zendframework/ZendSkeletonApplication](https://github.com/zendframework/ZendSkeletonApplication) GitHub project. Catapult assumes Zend Framwork is at the root of your repo and writes a database config file at `config/autoload/global.php`, you will also need to set `webroot: public/` in your Catapult configuration.
+### Software Auto Updates ###
+
+The below table outlines what software is supported for the `software_auto_update` website option. When this option is set to `true`, Catapult manages software core and pluggable component (plugins, modules, etc) updates to the latest compatible versions using the software's CLI tool or similiar method.
+
+Software | `software_auto_update` Support
+---------|--------------------------------
+`codeigniter2`      | [:white_check_mark:](http://www.codeigniter.com/userguide2/installation/upgrading.html)
+`codeigniter3`      | [:white_check_mark:](https://www.codeigniter.com/userguide3/installation/upgrading.html)
+`concrete58`        | [:white_check_mark:](https://documentation.concrete5.org/developers/installation/upgrading-concrete5)
+`drupal6`           | :white_check_mark:
+`drupal7`           | :white_check_mark:
+`drupal8`           | :white_check_mark:
+`elgg1`             | [:x:](http://learn.elgg.org/en/2.0/admin/upgrading.html)
+`elgg2`             | [:x:](http://learn.elgg.org/en/2.0/admin/upgrading.html)
+`expressionengine3` | [:x:](https://docs.expressionengine.com/latest/installation/update.html)
+`joomla3`           | [:x:](https://docs.joomla.org/J3.x:Updating_from_an_existing_version)
+`laravel5`          | [:x:](https://www.laravel.com/docs/master/upgrade)
+`mediawiki1`        | [:x:](https://www.mediawiki.org/wiki/Manual:Upgrading)
+`moodle3`           | :white_check_mark:
+`silverstripe3`     | [:x:](https://docs.silverstripe.org/en/3.4/upgrading/)
+`suitecrm7`         | [:x:](https://suitecrm.com/wiki/index.php/Upgrade)
+`wordpress4`        | :white_check_mark:
+`wordpress5`        | :white_check_mark:
+`xenforo1`          | [:x:](https://xenforo.com/help/upgrades/)
+`xenforo2`          | :white_check_mark:
+`zendframework2`    | :white_check_mark:
+
+In the scenario where an update may overwrite customizations to a file that is expected to be able to be customized (e.g. `.htaccess` or `robots.txt`), you may create an `_append` directory within the repository root of the website with files containing your customizations.
+
+* The append filenames must match the filenames that you would like to append.
+* The files must only contain the lines of content that you would like to append.
+* Please note that only files that allow for hash style comments (i.e. `# THIS IS A COMMENT`).
+* Please note that only files that are in the root of the software are supported.
 
 ### HTTPS and Certificates ###
 
@@ -1019,8 +1061,9 @@ For `software` that does not have specific documentation, please follow this gen
 
 Software | Approach | Documentation
 ---------|----------|--------------
-`codeigniter2`      |                      |
-`codeigniter3`      |                      |
+`codeigniter2`      | `.htaccess`          |
+`codeigniter3`      | `.htaccess`          |
+`concrete58`        | `.htaccess`          |
 `drupal6`           | `.htaccess`          |
 `drupal7`           | `.htaccess`          |
 `drupal8`           | `.htaccess`          |
@@ -1033,18 +1076,37 @@ Software | Approach | Documentation
 `silverstripe3`     | `mysite/_config.php` | http://api.silverstripe.org/3.1/class-Director.html -> http://stackoverflow.com/a/26865882
 `suitecrm7`         |                      | 
 `wordpress4`        | Database             | http://codex.wordpress.org/Changing_The_Site_URL
+`wordpress5`        | Database             | http://codex.wordpress.org/Changing_The_Site_URL
 `xenforo1`          |                      |
+`xenforo2`          |                      |
 `zendframework2`    |                      |
+
+### Debug Output ###
+
+Debug output, unlike logging, is a configuration that outputs exceptions on-screen of your website while you're developing in LocalDev for convenience. It also aligns with the testing activies as defined in [Release Management](#release-management). Debug output is configured at two levels; PHP and software specific, the below chart provides a breakdown.
+
+| LocalDev | Test | QC | Production
+|----------|------|----|-----------
+| Verbose | Verbose | Hidden | Hidden
+
 
 ### Cache Busting ###
 
-Caching plays a very important role in the performance of your website and enforces and recommends many [performance optimizations](#performance). Catapult generally enforces caching of files to 7 days, because of this, to ensure that a new website release is reflected in a user's browser you should consider [semantic versioning]((http://semver.org/spec/v2.0.0.html)) of website resource files. Here's an example:
+Caching plays a very important role in the performance of your website and enforces and recommends many [performance optimizations](#performance). Catapult generally enforces caching of files to 7 days, because of this, to ensure that a new website release is reflected in a user's browser you should consider [semantic versioning]((http://semver.org/spec/v2.0.0.html)) of website resource files. Here's an example of query string cache busting:
 
-`<link rel="stylesheet" href="style.min.css?v=3.4.1">`
+`<link rel="stylesheet" href="/css/style.min.css?v=3.4.1">`
 
 Ready to deploy a new release? Update the version number and the cache will be "busted":
 
-`<link rel="stylesheet" href="style.min.css?v=3.4.2">`
+`<link rel="stylesheet" href="/css/style.min.css?v=3.4.2">`
+
+A more complicated, yet effective method of cache busting is by using versioned folders. Resources with a "?" in the URL are not cached by some proxy caching servers. Here is an example of URL path cache busting:
+
+`<link rel="stylesheet" href="/css/3.4.1/style.min.css">`
+
+Ready to deploy a new release? Update the version number and the cache will be "busted":
+
+`<link rel="stylesheet" href="/css/3.4.2/style.min.css">`
 
 Each software type will vary as to the standard convention of website resource file versioning, here is a [Wordpress example](https://wordpress.stackexchange.com/a/90824) to get you started.
 
@@ -1053,14 +1115,14 @@ Progressive Web App (PWA), in general, is a term used to denote web apps that us
 
 ### Email ###
 
-Email delivery is an art, there are many considerations when trying to get an email into someone's inbox. Some considerations include, IP reputation, bounce management, analytics visibility, and more. For that reason, Catapult requires setup of a SendGrid account and configuration of SMTP within your website's software. To configure SendGrid with your software type, please set the SMTP configurtion to the following:
+Email delivery is an art, there are many considerations when trying to get an email into someone's inbox. Some considerations include, IP reputation, bounce management, analytics visibility, and more. For that reason, Catapult requires setup of a SendGrid account and configuration of SMTP within your website's software. To configure SendGrid with your website's software, please set the SMTP configuration to the following:
 
 * SMTP host: `smtp.sendgrid.net`
 * SMTP port: `587`
 * Encryption: `TLS`
 * Authenticaion: `yes`
-* Username: your SendGrid account username
-* Password: your SendGrid account password
+* Username: `~/secrets/configuration.yml["company"]["sendgrid_username"]`
+* Password: `~/secrets/configuration.yml["company"]["sendgrid_password"]`
 
 An example of implementation would be the [WP Mail SMTP](https://wordpress.org/plugins/wp-mail-smtp/) WordPress plugin.
 
@@ -1068,6 +1130,26 @@ An example of implementation would be the [WP Mail SMTP](https://wordpress.org/p
 
 * With SendGrid: Catapult automatically configures SendGrid to forward bounces to your `~/secrets/configuration.yml["company"]["email"]` to clear hard bounces every 5 days and soft bounces every 3 days.
 * Without SendGrid: Postfix will retry sending every hour for five days. Catapult cron looks for bounces and emails them to your `~/secrets/configuration.yml["company"]["email"]` daily.
+
+### Upload Limits ###
+
+The following HTTP request limits are defined for all websites:
+
+**HTTP (ModSecurity) Limits**
+
+* Maximum request body size excluding the size of any files being transported in the request (`SecRequestBodyNoFilesLimit`): `128 KB`
+   * Limits the `application/x-www-form-urlencoded` Content-Type
+* Maximum request body size (`SecRequestBodyLimit`): `64 MB`
+   * Limits the `multi-part` Content-Type
+   
+**PHP Limits**
+
+* Maximum size of an uploaded file (`upload_max_filesize`): `16 MB`
+* Maximum size of post data allowed (`post_max_size`): `64 MB`
+
+**Troubleshooting**
+
+If you are experiencing `401` or `413` HTTP response codes it may be due to the HTTP client not supporting the HTTP 1.1 `Expect` header. This header essentially says "I've got a huge payload, but before I send it please let me know if you can handle it". This gives the endpoints time to renegotiate the client certificate before the payload is sent. The `SSLRenegBufferSize` is set to `128 KB` for security reasons, so if your payload exceeds this size it will fail if the client does not support the HTTP 1.1 `Expect` header. Read more [here](https://stackoverflow.com/questions/14281628/ssl-renegotiation-with-client-certificate-causes-server-buffer-overflow/15394058#15394058).
 
 ### Database Migrations ###
 
@@ -1077,6 +1159,7 @@ Software | Tool | Command | Documentation
 ---------|------|---------|--------------
 `codeigniter2`      | Migrations      | `php index.php migrate`                                | https://ellislab.com/codeigniter/user-guide/libraries/migration.html
 `codeigniter3`      | Migrations      | `php index.php migrate`                                | https://www.codeigniter.com/user_guide/libraries/migration.html
+`concrete58`        | Symfony         | `concrete5 migrations:migrate`                         | https://symfony.com/doc/current/bundles/DoctrineMigrationsBundle/index.html
 `drupal6`           | Drush           | `drush updatedb -y`                                    | https://www.drupal.org/node/150215
 `drupal7`           | Drush           | `drush updatedb -y`                                    | https://www.drupal.org/node/150215
 `drupal8`           | Drush           | `drush updatedb -y`                                    | https://www.drupal.org/docs/8/api/update-api/introduction-to-update-api-for-drupal-8
@@ -1089,7 +1172,9 @@ Software | Tool | Command | Documentation
 `silverstripe3`     | MigrationTask   | `php framework/cli-script.php dev/tasks/MigrationTask` | http://api.silverstripe.org/3.3/class-MigrationTask.html
 `suitecrm7`         |                 |                                                        |
 `wordpress4`        | WP-CLI          | `wp-cli core update-db`                                | http://codex.wordpress.org/Creating_Tables_with_Plugins#Adding_an_Upgrade_Function
+`wordpress5`        | WP-CLI          | `wp-cli core update-db`                                | http://codex.wordpress.org/Creating_Tables_with_Plugins#Adding_an_Upgrade_Function
 `xenforo1`          |                 |                                                        |
+`xenforo2`          |                 |                                                        |
 `zendframework2`    |                 |                                                        |
 
 ### Refreshing Databases ###
@@ -1109,17 +1194,38 @@ Oracle SQL Developer is the recommended tool, to connect to and work with, datab
         * For convenience, you may also use `~/catapult/installers/jtds-1.3.1.jar`
 * **Connecting to:** LocalDev
     * The firewall allows direct connection to the database server. 
-        * Use the mysql values in `~/secrets/configuration.yml` to connect.
+        * From Oracle SQL Developer > View > Connections, add a New Connection with the respective environment's mysql user values in `~/secrets/configuration.yml`.
 * **Connecting to:** Test, QC, Production
     * The firewall does not allow direct connect to the database servers.
-        * Add a New SSH Host in Oracle SQL Developer with the respective environment's web server host public ip address, root username with key file at `~/secrets/id_rsa`.
+        * From Oracle SQL Developer > View > SSH, add a New SSH Host in Oracle SQL Developer with the respective environment's web server host public ip address, root username with key file at `~/secrets/id_rsa`.
             * Create a New Local Port Forward with the respective environment's database server host private ip address and port 3306.
-        * Then add a New Connection with the respective environment's mysql user values in `~/secrets/configuration.yml`.
+        * From Oracle SQL Developer > View > Connections, add a New Connection with the respective environment's mysql user values in `~/secrets/configuration.yml`.
             * The hostname will be localhost since we are forwarding the port through our local SSH tunnel.
 
 ### Production Hotfixes ###
 
-Always weigh the risk of *not performing* a production hotfix versus *performing* it, as production hotfixes require going outside of the normal development and testing workflow. Performing a production hotfix varies depending on the website's `software` type, `software_workflow` direction, and type of change (code or database).
+Always weigh the risk of *not performing* a production hotfix versus *performing* it, as production hotfixes require going outside of the normal development and testing workflow. Below is an example of how you can determine severity:
+
+Ask key stakeholders the following questions and assign a 1 or 0 for the answer, then add up the total:
+
+* What is the organizational risk?
+    * High = 1 or Low = 0
+* How many users does this effect?
+    * Many = 1 or Few = 0
+* Is there a workaround?
+    * No = 1 or Yes = 0
+* What is the user impact?
+    * High = 1 or Low = 0
+
+The total will determine the level of severity, typically a 4 would be considered a candidate for a production hotfix:
+
+* 0=Tolerate
+* 1=Trivial
+* 2=Minor
+* 3=Major
+* 4=Critical
+
+Performing a production hotfix varies depending on the website's `software` type, `software_workflow` direction, and type of change (code or database).
 
 * `software_workflow: downstream`
     * **Code**
@@ -1152,23 +1258,62 @@ Always weigh the risk of *not performing* a production hotfix versus *performing
 
 
 
+## Automated Deployment Cycle ##
+
+The automated deployment cycle releases changesets merged into respective environment branches for websites and your Catapult configuration, in addition to running server updates.
+
+Environment | Scheduled
+----------- | ---------
+LocalDev    | n/a, requires provision
+Test        | 12:00 AM
+QC          | 1:00 AM
+Production  | 2:00 AM
+
+* Operating System and server software updates
+* [Website software updates](#software-auto-updates)
+* [Website repository changesets](#software-workflow)
+* [Website software database restores](#software-workflows)
+* [Website software database migrations](#database-migrations)
+* [Website software database backups](#software-workflows)
+
+
+
 ## Maintenance Cycle ##
 
-A maintenance cycle is scheduled for defined times within the timezone that is defined within `~/secrets/configuration.yml` at the `timezone_redhat` and `timezone_windows` value of the [Company](#company) entry. This ensures servers within your infrastructure are automatically patched to mitigate security vulnerabilites.
+A maintenance cycle is scheduled for defined times within the timezone that is defined within `~/secrets/configuration.yml` at the `timezone_redhat` and `timezone_windows` value of the [Company](#company) entry. This ensures system and website software is patched and other security controls are run within your infrastructure to automatically mitigate security vulnerabilites.
 
 ### Daily ###
+Daily maintenance occurs:
 
-During daily maintenance, system updates are downloaded and installed, logs are rotated, and database maintenance performed.
+* Red Hat - 3:05 AM
+* Windows - 2:00 AM
 
-* Red Hat - 3:05AM
-* Windows - 2:00AM
+Daily maintenance includes:
+
+* Updating Operating System and server software
+* Rotating logs
+* Discovering mail which has failed to send
 
 ### Weekly ###
 
-During weekly maintenance, if necessary, servers will be rebooted dependant upon kernel updates for Red Hat and the Windows Updates pending restart status for Windows. Server reboots are generally fast for Red Hat at 5-10 seconds and 1-2 minutes for Windows.
+Weekly maintenance occurs:
 
-* Red Hat - Sunday 3:25AM
-* Windows - Sunday 3:00AM
+* Red Hat - Sunday 3:25 AM
+* Windows - Sunday 3:00 AM
+
+Weekly maintenance includes:
+
+* [Security Preventive Controls](#preventive-controls)
+* [Security Detective Controls](#detective-controls)
+* [Security Corrective Controls](#corrective-controls)
+* [Auto-rewew HTTPS certificate](#https-and-certificates)
+* Git garbage collection for website repositories
+* Performing database maintenance
+
+Servers will be rebooted when:
+
+* Red Hat - a kernel update is staged
+* Windows - Microsoft Update indicates a restart is required
 
 
 
@@ -1244,10 +1389,23 @@ Catapult enforces many security best practices that are important for you to be 
 
 * Weekly ClamAV antivirus scan of website files
 
-## Security Breach Notification Laws ##
+## Data Protection ##
 
-Catapult introduces many best practice security measures, however, security of customer data is ultimately your responsibility. Generally speaking, if personal information is compromised, you are required by law to notify the party. Personal information, in the United States, is generally classified as **an individual's first and last name in combination with a Social Security number, driver's license number, or financial account number**. Laws vary country-by-country and state-by-state - for more information please see [this list](http://www.itgovernanceusa.com/data-breach-notification-laws.aspx) of data breach laws by U.S. state compiled by IT Governence.
+Catapult introduces many best practice data protection measures, however, security of personal data is ultimately your responsibility. Generally speaking, if personal information is compromised, you are required by law to notify the party. Laws vary country-by-country and state-by-state, and can be enforcable in the state or country where the individual is physically located when the data is collected. This means that, even if your website is hosted within the U.S., you could potentially be subject to another country's data protection laws. The main principles of data protection, include:
 
+* Privacy by design
+* Right to access
+* Right to be forgotten
+* Data portability
+* Breach notification
+
+### United States ###
+
+Personally identifiable information (PII), in the U.S., is generally classified as **an individual's first and last name in combination with a Social Security number, driver's license number, or financial account number**. For more information, please see [this list](http://www.itgovernanceusa.com/data-breach-notification-laws.aspx) of data breach laws by U.S. state compiled by IT Governence.
+
+### Europe ###
+
+The General Data Protection Regulation (GDPR) is a regulation in E.U. law on data protection and privacy for all individuals within the European Union that becomes enforceable starting May 25, 2018. Article 4(1) of the GDPR defines "personal data" as any information relating to an identified or identifiable natural person ('data subject'); an identifiable natural person is one who can be identified, directly or indirectly, in particular by reference to an identifier such as a name, an identification number, location data, an online identifier or to one or more factors specific to the physical, physiological, genetic, mental, economic, cultural or social identity of that natural person. For more information, please see the [GDPR](http://eur-lex.europa.eu/legal-content/EN/TXT/?uri=celex:32016R0679).
 
 
 # Compliance #
@@ -1474,12 +1632,12 @@ Catapult is making the conference tour! We plan to attend the following conferen
 
 Catapult will also be seen throughout local meetups in the Philadelphia and Greater Philadelphia area! Get a chance to meet the team and engage at a personal level.
 
-* [Technical.ly Philly](http://www.meetup.com/Technically-Philly/) 6k+ technologists
-* [Tech in Motion Philly](http://www.meetup.com/TechinMotionPhilly/) 4k+ technologists
-* [Philadelphia WordPress Meetup Group](http://www.meetup.com/philadelphia-wordpress-meetup-group/) 1.5k+ technologists
-* [Philly DevOps](http://www.meetup.com/PhillyDevOps/) 1k+ technologists
+* [Technical.ly Philly](http://www.meetup.com/Technically-Philly/) 9k+ technologists
+* [Tech in Motion Philly](http://www.meetup.com/TechinMotionPhilly/) 7k+ technologists
+* [Philadelphia WordPress Meetup Group](http://www.meetup.com/philadelphia-wordpress-meetup-group/) 2k+ technologists
+* [Philly DevOps](http://www.meetup.com/PhillyDevOps/) 2k+ technologists
     * [\[09-20-2016\]  From Pets to Serverless: Deployment Panel](https://www.meetup.com/PhillyDevOps/events/232930398/)
-* [Greater Philadelphia Drupal Meetup Group](http://www.meetup.com/drupaldelphia/) .5k+ technologists
+* [Greater Philadelphia Drupal Meetup Group](http://www.meetup.com/drupaldelphia/) .75k+ technologists
 
 
 

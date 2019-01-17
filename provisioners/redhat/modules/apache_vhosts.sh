@@ -19,7 +19,6 @@ while IFS='' read -r -d '' key; do
     else
         domain_root="${domain}"
     fi
-    domainvaliddbname=$(echo "$key" | grep -w "domain" | cut -d ":" -f 2 | tr -d " " | tr "." "_" | tr "-" "_")
     domainvalidcertname=$(echo "$key" | grep -w "domain" | cut -d ":" -f 2 | tr -d " " | tr "." "_")
     if [ "$1" != "production" ]; then
         domainvalidcertname="${1}_${domainvalidcertname}"
@@ -27,6 +26,8 @@ while IFS='' read -r -d '' key; do
     force_auth=$(echo "$key" | grep -w "force_auth" | cut -d ":" -f 2 | tr -d " ")
     force_auth_exclude=$(echo "$key" | grep -w "force_auth_exclude" | tr -d " ")
     force_https=$(echo "$key" | grep -w "force_https" | cut -d ":" -f 2 | tr -d " ")
+    force_ip=$(echo "$key" | grep -w "force_ip" | tr -d " ")
+    force_ip_exclude=$(echo "$key" | grep -w "force_ip_exclude" | tr -d " ")
     software=$(echo "$key" | grep -w "software" | cut -d ":" -f 2 | tr -d " ")
     software_dbprefix=$(echo "$key" | grep -w "software_dbprefix" | cut -d ":" -f 2 | tr -d " ")
     software_php_version=$(provisioners software.apache.${software}.php_version)
@@ -91,15 +92,52 @@ EOF
             "
         fi
     else
-        # never force_auth in dev
         force_auth_value=""
     fi
-    # handle ssl certificates
-    # if there is a specified custom certificate available
+    # handle the force_ip option
+    if ([ ! -z "${force_ip}" ]); then
+        if ([ ! -z "${force_ip_exclude}" ]); then
+            force_ip_excludes=($(echo "${key}" | shyaml get-values force_ip_exclude))
+            if ([[ "${force_ip_excludes[@]}" =~ "$1" ]]); then
+                force_ip_value=""
+            else
+                force_ip_value="
+                    <Location />
+                        Require all denied
+                "
+                while IFS='' read -r -d '' ip; do
+                    force_ip_value+="
+                        Require ip ${ip}
+                    "
+                done < <(echo "${key}" | shyaml get-values-0 force_ip)
+                force_ip_value+="
+                    </Location>
+                "
+            fi
+        else
+            force_ip_value="
+                <Location />
+                    Require all denied
+            "
+            while IFS='' read -r -d '' ip; do
+                force_ip_value+="
+                    Require ip ${ip}
+                "
+            done < <(echo "${key}" | shyaml get-values-0 force_ip)
+            force_ip_value+="
+                </Location>
+            "
+        fi
+    else
+        force_ip_value=""
+    fi
+    # handle https certificates
+    # if there is a specified custom certificate available and it does not expire within the next 86400 seconds (1 day)
     if ([ -f "/var/www/repositories/apache/${domain}/_cert/${domainvalidcertname}/${domainvalidcertname}.ca-bundle" ] \
      && [ -f "/var/www/repositories/apache/${domain}/_cert/${domainvalidcertname}/${domainvalidcertname}.crt" ] \
      && [ -f "/var/www/repositories/apache/${domain}/_cert/${domainvalidcertname}/server.csr" ] \
-     && [ -f "/var/www/repositories/apache/${domain}/_cert/${domainvalidcertname}/server.key" ]); then
+     && [ -f "/var/www/repositories/apache/${domain}/_cert/${domainvalidcertname}/server.key" ] \
+     && [ $(openssl x509 -checkend 86400 -noout -in "/var/www/repositories/apache/${domain}/_cert/${domainvalidcertname}/${domainvalidcertname}.crt") ]); then
         https_certificates="
         SSLCertificateFile /var/www/repositories/apache/${domain}/_cert/${domainvalidcertname}/${domainvalidcertname}.crt
         SSLCertificateKeyFile /var/www/repositories/apache/${domain}/_cert/${domainvalidcertname}/server.key
@@ -141,16 +179,28 @@ EOF
         force_https_hsts="# HSTS is only enabled when force_https=true"
     fi
     # handle the software php_version setting
-    if [ "${software_php_version}" = "7.0" ]; then
+    if [ "${software_php_version}" = "7.2" ]; then
+        software_php_version_value="
+        <FilesMatch \.php$>
+            SetHandler \"proxy:fcgi://127.0.0.1:9720\"
+        </FilesMatch>
+        "
+    elif [ "${software_php_version}" = "7.1" ]; then
+        software_php_version_value="
+        <FilesMatch \.php$>
+            SetHandler \"proxy:fcgi://127.0.0.1:9710\"
+        </FilesMatch>
+        "
+    elif [ "${software_php_version}" = "7.0" ]; then
         software_php_version_value="
         <FilesMatch \.php$>
             SetHandler \"proxy:fcgi://127.0.0.1:9700\"
         </FilesMatch>
         "
-    elif [ "${software_php_version}" = "5.6" ]; then
+    elif [ "${software_php_version}" = "5.4" ]; then
         software_php_version_value="
         <FilesMatch \.php$>
-            SetHandler \"proxy:fcgi://127.0.0.1:9560\"
+            SetHandler \"proxy:fcgi://127.0.0.1:9540\"
         </FilesMatch>
         "
     else
@@ -166,6 +216,7 @@ EOF
     RewriteEngine On
 
     <VirtualHost *:80> # must listen * to support cloudflare
+
         ServerAdmin ${company_email}
         ServerName ${domain_environment}
         ServerAlias www.${domain_environment}
@@ -174,12 +225,21 @@ EOF
         ErrorLog /var/log/httpd/${domain_environment}/error_log
         CustomLog /var/log/httpd/${domain_environment}/access_log combined
         LogLevel warn
+
+        # force http basic auth if configured
         ${force_auth_value}
+
+        # force visitor ip address if configured
+        ${force_ip_value}
+
+        # force https if configured
         ${force_https_value}
+
     </VirtualHost>
 
     <IfModule mod_ssl.c>
         <VirtualHost *:443> # must listen * to support cloudflare
+
             ServerAdmin ${company_email}
             ServerName ${domain_environment}
             ServerAlias www.${domain_environment}
@@ -211,11 +271,14 @@ EOF
             # help old browsers
             BrowserMatch "MSIE [2-5]" nokeepalive ssl-unclean-shutdown downgrade-1.0 force-response-1.0
 
-            # set the ssl certificates
+            # set the https certificates
             ${https_certificates}
 
-            # force httpd basic auth if configured
+            # force http basic auth if configured
             ${force_auth_value}
+
+            # force visitor ip address if configured
+            ${force_ip_value}
 
         </VirtualHost>
     </IfModule>
@@ -223,19 +286,14 @@ EOF
     # define apache ruleset for the web root
     <Directory "/var/www/repositories/apache/${domain}/${webroot}">
 
-        # define the php version being used
-        ${software_php_version_value}
-
         # allow .htaccess in apache 2.4+
         AllowOverride All
         Options -Indexes +FollowSymlinks
 
-        # define new relic appname
-        <IfModule php5_module>
-            php_value newrelic.appname "${domain_environment};$(catapult company.name | tr '[:upper:]' '[:lower:]')-${1}-redhat"
-        </IfModule>
+        # define the php version being used
+        ${software_php_version_value}
 
-        # allow /manifest.json to be accessed regardless of basic auth
+        # allow /manifest.json to be accessed regardless of basic auth as /manifest.json is usually accessed out of basic auth context
         <Files "manifest.json">
             <IfModule mod_authz_core.c>
                 Satisfy Any
@@ -373,14 +431,22 @@ EOF
 
     # deny access to .git folder
     <Directory "/var/www/repositories/apache/${domain}/.git">
-        Order Deny,Allow
-        Deny From All
+        Require all denied
+    </Directory>
+
+    # deny access to _append folder
+    <Directory "/var/www/repositories/apache/${domain}/_append">
+        Require all denied
+    </Directory>
+
+    # deny access to _cert folder
+    <Directory "/var/www/repositories/apache/${domain}/_cert">
+        Require all denied
     </Directory>
 
     # deny access to _sql folder
     <Directory "/var/www/repositories/apache/${domain}/_sql">
-        Order Deny,Allow
-        Deny From All
+        Require all denied
     </Directory>
 
 EOF
@@ -389,6 +455,13 @@ EOF
     if [ ! -f /etc/httpd/sites-enabled/$domain_environment.conf ]; then
         sudo ln -s /etc/httpd/sites-available/$domain_environment.conf /etc/httpd/sites-enabled/$domain_environment.conf
     fi
+
+    # set a .user.ini file for php-fpm to read
+    sudo mkdir --parents /var/www/repositories/apache/${domain}/${webroot}
+    sudo touch /var/www/repositories/apache/${domain}/${webroot}/.user.ini
+    sudo cat > /var/www/repositories/apache/${domain}/${webroot}/.user.ini << EOF
+newrelic.appname="${domain_environment};$(catapult company.name | tr '[:upper:]' '[:lower:]')-${1}-redhat"
+EOF
 
 done
 
